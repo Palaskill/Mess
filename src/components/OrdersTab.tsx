@@ -40,6 +40,7 @@ export default function OrdersTab({
   const [quantity, setQuantity] = useState(1);
   const [splitType, setSplitType] = useState<'individual' | 'shared'>('individual');
   const [activeCategory, setActiveCategory] = useState<'all' | 'drinks' | 'food' | 'other'>('all');
+  const [selectedInitialSharers, setSelectedInitialSharers] = useState<string[]>([]);
 
   // Assign modal state (for individual items)
   const [assigningOrder, setAssigningOrder] = useState<Order | null>(null);
@@ -81,6 +82,9 @@ export default function OrdersTab({
     if (selectedMenuItem) {
       formData.set('menu_item_id', selectedMenuItem.id);
     }
+    if (selectedInitialSharers.length > 0) {
+      formData.set('assigned_participant_ids', selectedInitialSharers.join(','));
+    }
 
     startTransition(async () => {
       const res = await createOrder(formData);
@@ -91,6 +95,7 @@ export default function OrdersTab({
         setCustomPrice('');
         setQuantity(1);
         setSplitType('individual');
+        setSelectedInitialSharers([]);
       } else {
         setError(res.error || 'Failed to create order');
       }
@@ -106,7 +111,7 @@ export default function OrdersTab({
     }
   };
 
-  // Toggle a friend on a shared order
+  // Toggle a friend on a shared / food order
   const handleToggleSharer = async (order: Order, participant: Participant) => {
     if (isClosed) return;
     const isAssigned = assignments.some(
@@ -156,6 +161,7 @@ export default function OrdersTab({
           <button
             onClick={() => {
               setError(null);
+              setSelectedInitialSharers([]);
               setIsAddOpen(true);
             }}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold shadow-lg shadow-blue-600/30 active:scale-95 transition-all min-h-[44px]"
@@ -172,11 +178,15 @@ export default function OrdersTab({
           <div className="text-4xl mb-3">🍻</div>
           <h3 className="text-base font-bold text-white mb-1">No orders yet</h3>
           <p className="text-xs text-slate-400 mb-4 max-w-xs mx-auto">
-            Order drinks or food from the menu. When it arrives at your table, assign it to people!
+            Order drinks or food from the menu. Food can be assigned to 1 person or split among many!
           </p>
           {!isClosed && (
             <button
-              onClick={() => setIsAddOpen(true)}
+              onClick={() => {
+                setError(null);
+                setSelectedInitialSharers([]);
+                setIsAddOpen(true);
+              }}
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold"
             >
               + Place First Order
@@ -225,7 +235,7 @@ export default function OrdersTab({
                               : 'bg-blue-500/20 text-blue-300'
                           }`}
                         >
-                          {isShared ? 'Shared' : 'Individual'}
+                          {isShared ? 'Food / Split' : 'Individual'}
                         </span>
                       </div>
                     </div>
@@ -251,14 +261,27 @@ export default function OrdersTab({
                 {/* Assignment section */}
                 <div className="mt-3.5 pt-3 border-t border-slate-700/60">
                   {isShared ? (
-                    /* SHARED SPLIT: Anyone can tap to join or leave */
-                    <div>
-                      <div className="flex items-center justify-between text-xs mb-2">
-                        <span className="text-slate-400 font-medium">
-                          Sharing ({sharersCount} {sharersCount === 1 ? 'person' : 'people'}):
-                        </span>
-                        <span className="text-amber-400 font-bold">
-                          {sharersCount > 0 ? `$${perSharerPrice.toFixed(2)} each` : 'Nobody sharing yet'}
+                    /* FOOD / SHARED SPLIT: 1 person or split among friends */
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <div>
+                          {sharersCount === 0 ? (
+                            <span className="text-amber-400 font-bold flex items-center gap-1">
+                              ⚠️ Not assigned yet — tap who ordered this:
+                            </span>
+                          ) : sharersCount === 1 ? (
+                            <span className="text-blue-300 font-bold">
+                              👤 1 person eating (pays full ${totalOrderPrice.toFixed(2)})
+                            </span>
+                          ) : (
+                            <span className="text-emerald-400 font-bold">
+                              🍕 Split {sharersCount} ways (${perSharerPrice.toFixed(2)} each)
+                            </span>
+                          )}
+                        </div>
+
+                        <span className="text-[11px] text-slate-400 hidden sm:inline">
+                          Tap to add/remove friends
                         </span>
                       </div>
 
@@ -273,9 +296,9 @@ export default function OrdersTab({
                               key={p.id}
                               onClick={() => handleToggleSharer(order, p)}
                               disabled={isClosed || isPending}
-                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all min-h-[36px] active:scale-95 ${
+                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all min-h-[38px] active:scale-95 ${
                                 isSharing
-                                  ? 'bg-blue-600 text-white shadow-md'
+                                  ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-400/40'
                                   : 'bg-slate-700/50 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
                               }`}
                             >
@@ -284,7 +307,11 @@ export default function OrdersTab({
                                 style={{ backgroundColor: p.color }}
                               />
                               <span>{p.name}</span>
-                              {isSharing && <span className="text-blue-200 text-xs">✓</span>}
+                              {isSharing && (
+                                <span className="text-[11px] bg-blue-700/90 rounded-full px-1.5 py-0.5 font-bold">
+                                  ${perSharerPrice.toFixed(2)}
+                                </span>
+                              )}
                             </button>
                           );
                         })}
@@ -292,7 +319,7 @@ export default function OrdersTab({
 
                       {participants.length === 0 && (
                         <p className="text-xs text-amber-400/80 italic">
-                          Add friends to the session to share this item!
+                          Add friends in the Friends tab to assign this dish!
                         </p>
                       )}
                     </div>
@@ -431,7 +458,7 @@ export default function OrdersTab({
                       setSelectedMenuItem(null);
                     }}
                     required
-                    placeholder="e.g. Beer, Nachos"
+                    placeholder="e.g. Pizza, Wings, Beer"
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 text-sm"
                   />
                 </div>
@@ -447,7 +474,7 @@ export default function OrdersTab({
                     value={customPrice}
                     onChange={(e) => setCustomPrice(e.target.value)}
                     required
-                    placeholder="4.00"
+                    placeholder="12.00"
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 text-sm"
                   />
                 </div>
@@ -488,40 +515,91 @@ export default function OrdersTab({
               {/* Split Type Selector */}
               <div>
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
-                  How to Split?
+                  Type of Item
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
-                    onClick={() => setSplitType('individual')}
-                    className={`p-3 rounded-xl border text-left transition-all ${
-                      splitType === 'individual'
-                        ? 'bg-blue-600/20 border-blue-500 text-white'
-                        : 'bg-slate-800 border-slate-700 text-slate-400'
-                    }`}
-                  >
-                    <div className="font-bold text-sm mb-0.5">🍺 Individual</div>
-                    <div className="text-[11px] opacity-80 leading-tight">
-                      Units assigned to specific people (e.g. beers)
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setSplitType('shared')}
+                    onClick={() => {
+                      setSplitType('shared');
+                    }}
                     className={`p-3 rounded-xl border text-left transition-all ${
                       splitType === 'shared'
                         ? 'bg-amber-500/20 border-amber-500 text-white'
                         : 'bg-slate-800 border-slate-700 text-slate-400'
                     }`}
                   >
-                    <div className="font-bold text-sm mb-0.5">🍕 Shared</div>
+                    <div className="font-bold text-sm mb-0.5">🍕 Food / Dish</div>
                     <div className="text-[11px] opacity-80 leading-tight">
-                      Price splits evenly among everyone eating
+                      For 1 person or split evenly among sharers
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSplitType('individual');
+                    }}
+                    className={`p-3 rounded-xl border text-left transition-all ${
+                      splitType === 'individual'
+                        ? 'bg-blue-600/20 border-blue-500 text-white'
+                        : 'bg-slate-800 border-slate-700 text-slate-400'
+                    }`}
+                  >
+                    <div className="font-bold text-sm mb-0.5">🍺 Drinks (by unit)</div>
+                    <div className="text-[11px] opacity-80 leading-tight">
+                      Units assigned to specific people (beers, sodas)
                     </div>
                   </button>
                 </div>
               </div>
+
+              {/* Optional: Who ordered this right now? */}
+              {participants.length > 0 && (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+                    {splitType === 'shared'
+                      ? 'Who is having this? (tap 1 or more friends)'
+                      : 'Assign units to (optional):'}
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {participants.map((p) => {
+                      const isSelected = selectedInitialSharers.includes(p.id);
+                      return (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => {
+                            if (splitType === 'shared') {
+                              setSelectedInitialSharers((prev) =>
+                                prev.includes(p.id)
+                                  ? prev.filter((id) => id !== p.id)
+                                  : [...prev, p.id]
+                              );
+                            } else {
+                              setSelectedInitialSharers((prev) =>
+                                prev.includes(p.id) ? [] : [p.id]
+                              );
+                            }
+                          }}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all min-h-[34px] ${
+                            isSelected
+                              ? 'bg-blue-600 text-white ring-2 ring-blue-400 shadow-md'
+                              : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                          }`}
+                        >
+                          <span
+                            className="w-2.5 h-2.5 rounded-full"
+                            style={{ backgroundColor: p.color }}
+                          />
+                          <span>{p.name}</span>
+                          {isSelected && <span>✓</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               <div className="pt-2">
                 <button

@@ -398,20 +398,47 @@ export async function createOrder(formData: FormData): Promise<{ success: boolea
     }
 
     const supabase = await getSupabase();
-    const { error } = await supabase.from('orders').insert([
-      {
-        session_id: sessionId,
-        menu_item_id: menuItemId,
-        item_name: itemName,
-        quantity,
-        unit_price: unitPrice,
-        split_type: splitType,
-      },
-    ]);
+    const { data: newOrder, error } = await supabase
+      .from('orders')
+      .insert([
+        {
+          session_id: sessionId,
+          menu_item_id: menuItemId,
+          item_name: itemName,
+          quantity,
+          unit_price: unitPrice,
+          split_type: splitType,
+        },
+      ])
+      .select('id')
+      .single();
 
-    if (error) {
+    if (error || !newOrder) {
       console.error('Error creating order:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: error?.message || 'Failed to create order' };
+    }
+
+    const assignedIdsStr = formData.get('assigned_participant_ids') as string;
+    if (assignedIdsStr) {
+      const pIds = assignedIdsStr.split(',').filter(Boolean);
+      if (pIds.length > 0) {
+        if (splitType === 'shared') {
+          const assignmentsToInsert = pIds.map((pId) => ({
+            order_id: newOrder.id,
+            participant_id: pId,
+            quantity: 1,
+          }));
+          await supabase.from('assignments').insert(assignmentsToInsert);
+        } else {
+          await supabase.from('assignments').insert([
+            {
+              order_id: newOrder.id,
+              participant_id: pIds[0],
+              quantity: quantity,
+            },
+          ]);
+        }
+      }
     }
 
     revalidatePath(`/session/${sessionId}`);

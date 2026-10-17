@@ -143,15 +143,19 @@ export default function FriendsTab({
 
       {/* Add Friend Bottom Sheet */}
       {isAddOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-md bg-slate-900 border-t sm:border border-slate-700 rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl animate-slide-up">
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-md bg-slate-900 border-t sm:border border-slate-700 rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl animate-slide-up max-h-[85dvh] overflow-y-auto overscroll-contain pb-[max(6rem,env(safe-area-inset-bottom))] sm:pb-6">
+            {/* Grab handle for mobile */}
+            <div className="w-12 h-1.5 bg-slate-700 rounded-full mx-auto mb-4 sm:hidden" />
+
             <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
                 <span>👤</span> Add Friend
               </h3>
               <button
+                type="button"
                 onClick={() => setIsAddOpen(false)}
-                className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white"
+                className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white"
               >
                 ✕
               </button>
@@ -175,7 +179,7 @@ export default function FriendsTab({
                   autoFocus
                   required
                   placeholder="e.g. Karim, Sarah, Alex"
-                  className="w-full px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 text-base"
+                  className="w-full px-4 py-3.5 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 text-base"
                 />
               </div>
 
@@ -191,7 +195,7 @@ export default function FriendsTab({
                       onClick={() => setSelectedColor(color)}
                       className={`w-9 h-9 rounded-full transition-transform ${
                         selectedColor === color
-                          ? 'ring-4 ring-white/50 scale-110 shadow-lg'
+                          ? 'ring-4 ring-white/60 scale-110 shadow-lg'
                           : 'hover:scale-105 opacity-80 hover:opacity-100'
                       }`}
                       style={{ backgroundColor: color }}
@@ -200,11 +204,11 @@ export default function FriendsTab({
                 </div>
               </div>
 
-              <div className="pt-2">
+              <div className="pt-3">
                 <button
                   type="submit"
                   disabled={isPending || !name.trim()}
-                  className="w-full py-3.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm shadow-lg shadow-blue-600/30 active:scale-98 transition-all disabled:opacity-50 min-h-[48px]"
+                  className="w-full py-4 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-base shadow-lg shadow-blue-600/30 active:scale-98 transition-all disabled:opacity-50 min-h-[52px]"
                 >
                   {isPending ? 'Adding...' : 'Add Friend'}
                 </button>

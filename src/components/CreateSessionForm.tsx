@@ -18,6 +18,13 @@ const QUICK_SUGGESTIONS = [
   'Team Night Out 🍕',
 ];
 
+export const REGULAR_FRIENDS = [
+  { name: 'Firas', color: '#3B82F6' },
+  { name: 'Dhia', color: '#10B981' },
+  { name: 'Fahd', color: '#8B5CF6' },
+  { name: 'Khalil', color: '#F59E0B' },
+];
+
 export default function CreateSessionForm({
   mode = 'fab',
   buttonText = 'Start First Session',
@@ -26,6 +33,12 @@ export default function CreateSessionForm({
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState('');
+  const [selectedFriends, setSelectedFriends] = useState<string[]>([
+    'Firas',
+    'Dhia',
+    'Fahd',
+    'Khalil',
+  ]);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -34,6 +47,7 @@ export default function CreateSessionForm({
     if (isOpen) {
       setError(null);
       setName('');
+      setSelectedFriends(REGULAR_FRIENDS.map((f) => f.name));
       // Slight delay to allow modal render for smooth focus
       const timer = setTimeout(() => {
         inputRef.current?.focus();
@@ -41,6 +55,22 @@ export default function CreateSessionForm({
       return () => clearTimeout(timer);
     }
   }, [isOpen]);
+
+  const toggleFriend = (friendName: string) => {
+    setSelectedFriends((prev) =>
+      prev.includes(friendName)
+        ? prev.filter((n) => n !== friendName)
+        : [...prev, friendName]
+    );
+  };
+
+  const selectAllFriends = () => {
+    setSelectedFriends(REGULAR_FRIENDS.map((f) => f.name));
+  };
+
+  const clearAllFriends = () => {
+    setSelectedFriends([]);
+  };
 
   const handleOpen = () => setIsOpen(true);
   const handleClose = () => {
@@ -60,7 +90,10 @@ export default function CreateSessionForm({
 
     startTransition(async () => {
       try {
-        const newSession = await createSession(trimmed);
+        const initialParticipants = REGULAR_FRIENDS.filter((f) =>
+          selectedFriends.includes(f.name)
+        );
+        const newSession = await createSession(trimmed, initialParticipants);
         setIsOpen(false);
         router.push(`/session/${newSession.id}`);
       } catch (err: any) {
@@ -192,6 +225,72 @@ export default function CreateSessionForm({
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* Regular Crew Quick Selector */}
+              <div className="pt-1">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <span>👥</span> Regulars Present?
+                  </span>
+                  <div className="flex items-center gap-2 text-xs">
+                    <button
+                      type="button"
+                      onClick={selectAllFriends}
+                      className="text-blue-400 hover:text-blue-300 font-medium px-1 py-0.5"
+                    >
+                      All
+                    </button>
+                    <span className="text-slate-600">•</span>
+                    <button
+                      type="button"
+                      onClick={clearAllFriends}
+                      className="text-slate-400 hover:text-slate-300 font-medium px-1 py-0.5"
+                    >
+                      None
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  {REGULAR_FRIENDS.map((friend) => {
+                    const isSelected = selectedFriends.includes(friend.name);
+                    return (
+                      <button
+                        key={friend.name}
+                        type="button"
+                        onClick={() => toggleFriend(friend.name)}
+                        disabled={isPending}
+                        className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left transition-all touch-manipulation min-h-[46px] ${
+                          isSelected
+                            ? 'bg-slate-800/90 border-blue-500/80 text-white shadow-sm ring-1 ring-blue-500/20'
+                            : 'bg-slate-900/50 border-slate-800 text-slate-400 hover:border-slate-700 opacity-60'
+                        }`}
+                      >
+                        <div
+                          className="w-3.5 h-3.5 rounded-full flex-shrink-0 transition-transform"
+                          style={{
+                            backgroundColor: friend.color,
+                            boxShadow: isSelected ? `0 0 8px ${friend.color}80` : 'none',
+                          }}
+                        />
+                        <span className="truncate font-medium text-xs flex-1">
+                          {friend.name}
+                        </span>
+                        {isSelected && (
+                          <span className="text-blue-400 text-xs font-bold">
+                            ✓
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="mt-2 text-[11px] text-slate-400">
+                  {selectedFriends.length > 0
+                    ? `✓ ${selectedFriends.length} friend${selectedFriends.length > 1 ? 's' : ''} will be seated automatically.`
+                    : 'No friends selected. You can add them later.'}
+                </p>
               </div>
 
               {/* Action buttons */}

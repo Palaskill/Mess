@@ -212,29 +212,73 @@ export async function getSessions(): Promise<SessionWithCount[]> {
   }
 }
 
-export async function createSession(nameOrFormData: string | FormData): Promise<Session> {
-  const name = typeof nameOrFormData === 'string'
-    ? nameOrFormData.trim()
-    : (nameOrFormData.get('name') as string)?.trim();
+const DEFAULT_PARTICIPANT_COLORS = [
+  '#3B82F6',
+  '#10B981',
+  '#8B5CF6',
+  '#F59E0B',
+  '#EF4444',
+  '#EC4899',
+  '#06B6D4',
+  '#84CC16',
+];
+
+export async function createSession(
+  nameOrFormData: string | FormData,
+  initialParticipants?: { name: string; color: string }[]
+): Promise<Session> {
+  let name = '';
+  let participantsList = initialParticipants || [];
+
+  if (typeof nameOrFormData === 'string') {
+    name = nameOrFormData.trim();
+  } else {
+    name = (nameOrFormData.get('name') as string)?.trim();
+    const rawParticipants = nameOrFormData.get('participants') as string;
+    if (rawParticipants && participantsList.length === 0) {
+      try {
+        participantsList = JSON.parse(rawParticipants);
+      } catch {
+        // Fallback comma-separated
+        participantsList = rawParticipants.split(',').filter(Boolean).map((n, i) => ({
+          name: n.trim(),
+          color: DEFAULT_PARTICIPANT_COLORS[i % DEFAULT_PARTICIPANT_COLORS.length],
+        }));
+      }
+    }
+  }
 
   if (!name) {
     throw new Error('Session name is required');
   }
 
   const supabase = await getSupabase();
-  const { data, error } = await supabase
+  const { data: session, error } = await supabase
     .from('sessions')
     .insert([{ name, status: 'open' }])
     .select()
     .single();
 
-  if (error || !data) {
+  if (error || !session) {
     console.error('Error creating session:', error);
     throw new Error(error?.message || 'Failed to create session');
   }
 
+  // Insert initial participants if provided
+  if (participantsList && participantsList.length > 0) {
+    const toInsert = participantsList.map((p) => ({
+      session_id: session.id,
+      name: p.name,
+      color: p.color || '#3B82F6',
+    }));
+    const { error: pError } = await supabase.from('participants').insert(toInsert);
+    if (pError) {
+      console.error('Error inserting initial participants:', pError);
+    }
+  }
+
   revalidatePath('/');
-  return data as Session;
+  return session as Session;
 }
 
 export async function closeSession(id: string): Promise<{ success: boolean; error?: string }> {

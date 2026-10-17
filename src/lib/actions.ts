@@ -493,6 +493,86 @@ export async function createOrder(formData: FormData): Promise<{ success: boolea
   }
 }
 
+export interface CreateBatchOrderItem {
+  menu_item_id?: string | null;
+  item_name: string;
+  quantity: number;
+  unit_price: number;
+  split_type: 'individual' | 'shared';
+  assigned_participant_ids?: string[];
+}
+
+export async function createBatchOrders(
+  sessionId: string,
+  items: CreateBatchOrderItem[]
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    if (!sessionId) {
+      return { success: false, error: 'Session ID is required' };
+    }
+    if (!items || items.length === 0) {
+      return { success: false, error: 'At least one item is required' };
+    }
+
+    const supabase = await getSupabase();
+
+    for (const item of items) {
+      const quantity = Math.max(1, parseInt(String(item.quantity), 10) || 1);
+      const unitPrice = parseFloat(String(item.unit_price));
+      const itemName = item.item_name?.trim();
+
+      if (!itemName || isNaN(unitPrice) || unitPrice < 0) {
+        continue;
+      }
+
+      const { data: newOrder, error } = await supabase
+        .from('orders')
+        .insert([
+          {
+            session_id: sessionId,
+            menu_item_id: item.menu_item_id || null,
+            item_name: itemName,
+            quantity,
+            unit_price: unitPrice,
+            split_type: item.split_type || 'individual',
+          },
+        ])
+        .select('id')
+        .single();
+
+      if (error || !newOrder) {
+        console.error('Error creating order in batch:', error);
+        continue;
+      }
+
+      if (item.assigned_participant_ids && item.assigned_participant_ids.length > 0) {
+        if (item.split_type === 'shared') {
+          const assignmentsToInsert = item.assigned_participant_ids.map((pId) => ({
+            order_id: newOrder.id,
+            participant_id: pId,
+            quantity: 1,
+          }));
+          await supabase.from('assignments').insert(assignmentsToInsert);
+        } else {
+          await supabase.from('assignments').insert([
+            {
+              order_id: newOrder.id,
+              participant_id: item.assigned_participant_ids[0],
+              quantity: quantity,
+            },
+          ]);
+        }
+      }
+    }
+
+    revalidatePath(`/session/${sessionId}`);
+    return { success: true };
+  } catch (err: any) {
+    console.error('Failed to create batch orders:', err);
+    return { success: false, error: err?.message || 'Failed to create orders' };
+  }
+}
+
 export async function deleteOrder(id: string, sessionId: string): Promise<{ success: boolean; error?: string }> {
   try {
     const supabase = await getSupabase();

@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: mess
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        value: https://swnhjijqlejpjbrbxoln.supabase.co
+      - key: NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+        value: sb_publishable_ujl-AZS9YbNlggRaRmwKDw_A4YwS_fn
+      - key: NODE_ENV
+        value: production

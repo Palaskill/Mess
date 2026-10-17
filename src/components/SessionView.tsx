@@ -12,6 +12,7 @@ import {
 import FriendsTab from '@/components/FriendsTab';
 import OrdersTab from '@/components/OrdersTab';
 import BillTab from '@/components/BillTab';
+import ThemeToggle from '@/components/ThemeToggle';
 import { getUnassignedQuantity } from '@/lib/calculations';
 
 interface SessionViewProps {
@@ -65,6 +66,8 @@ export default function SessionView({
               />
               {!isClosed ? 'Active Session' : 'Closed Tab'}
             </span>
+
+            <ThemeToggle variant="compact" />
           </div>
         </div>
 

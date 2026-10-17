@@ -1,6 +1,7 @@
 import { getSessions } from '@/lib/actions';
 import SessionCard from '@/components/SessionCard';
 import CreateSessionForm from '@/components/CreateSessionForm';
+import ThemeToggle from '@/components/ThemeToggle';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,6 +31,8 @@ export default async function HomePage() {
                 </p>
               </div>
             </div>
+
+            <ThemeToggle />
           </div>
 
           {/* Quick stats pills */}

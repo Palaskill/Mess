@@ -49,18 +49,70 @@ export async function getMenuItems(): Promise<MenuItem[]> {
 export async function getActiveMenuItems(): Promise<MenuItem[]> {
   try {
     const supabase = await getSupabase();
-    const { data, error } = await supabase
+    const { data: items, error } = await supabase
       .from('menu_items')
       .select('*')
-      .eq('is_active', true)
-      .order('category', { ascending: true })
-      .order('name', { ascending: true });
+      .eq('is_active', true);
 
-    if (error) {
+    if (error || !items) {
       console.error('Error fetching active menu items:', error);
       return [];
     }
-    return (data || []) as MenuItem[];
+
+    // Fetch order counts across all sessions to rank items by most commonly ordered
+    const { data: orderStats } = await supabase
+      .from('orders')
+      .select('menu_item_id, item_name, quantity');
+
+    const idCountMap: Record<string, number> = {};
+    const nameCountMap: Record<string, number> = {};
+
+    if (orderStats) {
+      for (const ord of orderStats) {
+        const qty = ord.quantity || 1;
+        if (ord.menu_item_id) {
+          idCountMap[ord.menu_item_id] = (idCountMap[ord.menu_item_id] || 0) + qty;
+        }
+        if (ord.item_name) {
+          const lowerName = ord.item_name.trim().toLowerCase();
+          nameCountMap[lowerName] = (nameCountMap[lowerName] || 0) + qty;
+        }
+      }
+    }
+
+    // Standard bar staple weights to provide intelligent initial ranking if few orders
+    const POPULAR_WEIGHTS: Record<string, number> = {
+      beer: 100,
+      pizza: 95,
+      fries: 85,
+      wings: 80,
+      cola: 75,
+      nachos: 70,
+      burger: 65,
+      wine: 60,
+      water: 50,
+      juice: 40,
+      coffee: 30,
+      'fruit sec': 25,
+    };
+
+    const sortedItems = items.map((item: any) => {
+      const lower = item.name.trim().toLowerCase();
+      const realCount = idCountMap[item.id] || nameCountMap[lower] || 0;
+      const defaultScore = POPULAR_WEIGHTS[lower] || 10;
+      // Real orders count heavily, default score breaks ties
+      const score = realCount * 1000 + defaultScore;
+      return {
+        ...item,
+        order_count: realCount,
+        _score: score,
+      };
+    });
+
+    // Sort descending by popularity score (most commonly ordered first)
+    sortedItems.sort((a, b) => b._score - a._score);
+
+    return sortedItems.map(({ _score, ...item }) => item) as MenuItem[];
   } catch (err) {
     console.error('Failed to get active menu items:', err);
     return [];

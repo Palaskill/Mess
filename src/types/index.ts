@@ -8,6 +8,7 @@ export interface MenuItem {
   default_split: 'individual' | 'shared';
   is_active: boolean;
   created_at: string;
+  order_count?: number;
 }
 
 export interface Session {

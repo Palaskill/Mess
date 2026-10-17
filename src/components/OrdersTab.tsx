@@ -65,6 +65,16 @@ export default function OrdersTab({
   // Active menu items
   const activeMenu = menuItems.filter((i) => i.is_active);
 
+  // Track orders in current session to boost frequently re-ordered items
+  const sessionOrderCounts = orders.reduce((acc, ord) => {
+    if (ord.menu_item_id) {
+      acc[ord.menu_item_id] = (acc[ord.menu_item_id] || 0) + ord.quantity;
+    }
+    const lower = ord.item_name.trim().toLowerCase();
+    acc[lower] = (acc[lower] || 0) + ord.quantity;
+    return acc;
+  }, {} as Record<string, number>);
+
   // Helper: check quantity of a menu item in current round
   const getItemQtyInRound = (menuItemId: string) => {
     const item = roundItems.find((r) => r.menuItemId === menuItemId);
@@ -645,7 +655,16 @@ export default function OrdersTab({
                 <div className="space-y-4">
                   {(['drinks', 'food', 'other'] as const).map((catKey) => {
                     if (activeCategory !== 'all' && activeCategory !== catKey) return null;
-                    const itemsInCat = activeMenu.filter((m) => m.category === catKey);
+                    const itemsInCat = activeMenu
+                      .filter((m) => m.category === catKey)
+                      .sort((a, b) => {
+                        const aSession = sessionOrderCounts[a.id] || sessionOrderCounts[a.name.trim().toLowerCase()] || 0;
+                        const bSession = sessionOrderCounts[b.id] || sessionOrderCounts[b.name.trim().toLowerCase()] || 0;
+                        const aScore = (a.order_count || 0) + aSession * 10;
+                        const bScore = (b.order_count || 0) + bSession * 10;
+                        return bScore - aScore;
+                      });
+
                     if (itemsInCat.length === 0) return null;
 
                     const catTitle =
@@ -667,8 +686,12 @@ export default function OrdersTab({
                         )}
 
                         <div className="grid grid-cols-2 gap-2">
-                          {itemsInCat.map((item) => {
+                          {itemsInCat.map((item, index) => {
                             const inRoundQty = getItemQtyInRound(item.id);
+                            const sessionQty = sessionOrderCounts[item.id] || sessionOrderCounts[item.name.trim().toLowerCase()] || 0;
+                            const totalOrdered = (item.order_count || 0) + sessionQty;
+                            const isTopPick = index === 0;
+
                             return (
                               <div
                                 key={item.id}
@@ -687,8 +710,19 @@ export default function OrdersTab({
                                       {item.default_split === 'shared' ? '🍕' : '🍺'}
                                     </span>
                                   </div>
-                                  <div className="text-xs font-extrabold text-emerald-400 mt-0.5">
-                                    ${Number(item.price).toFixed(2)}
+                                  <div className="flex items-baseline justify-between gap-1 mt-0.5">
+                                    <span className="text-xs font-extrabold text-emerald-400">
+                                      ${Number(item.price).toFixed(2)}
+                                    </span>
+                                    {isTopPick ? (
+                                      <span className="text-[9px] font-bold text-amber-400 bg-amber-400/10 px-1 py-0.2 rounded border border-amber-400/20">
+                                        🔥 Top
+                                      </span>
+                                    ) : totalOrdered > 0 ? (
+                                      <span className="text-[9px] text-slate-500">
+                                        {totalOrdered} ordered
+                                      </span>
+                                    ) : null}
                                   </div>
                                 </div>
 

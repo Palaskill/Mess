@@ -460,7 +460,7 @@ export async function getOrders(sessionId: string): Promise<Order[]> {
       .from('orders')
       .select('*')
       .eq('session_id', sessionId)
-      .order('created_at', { ascending: true });
+      .order('created_at', { ascending: false });
 
     if (error) {
       console.error('Error fetching orders:', error);
@@ -763,7 +763,7 @@ export async function getSessionData(sessionId: string): Promise<{
     const [sessionRes, participantsRes, ordersRes, assignmentsRes] = await Promise.all([
       supabase.from('sessions').select('*').eq('id', sessionId).single(),
       supabase.from('participants').select('*').eq('session_id', sessionId).order('joined_at', { ascending: true }),
-      supabase.from('orders').select('*').eq('session_id', sessionId).order('created_at', { ascending: true }),
+      supabase.from('orders').select('*').eq('session_id', sessionId).order('created_at', { ascending: false }),
       supabase.from('assignments').select('*, participant:participants!inner(*)').eq('participant.session_id', sessionId),
     ]);
 

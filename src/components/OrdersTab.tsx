@@ -347,7 +347,9 @@ export default function OrdersTab({
         </div>
       ) : (
         <div className="grid gap-4">
-          {orders.map((order) => {
+          {[...orders]
+            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+            .map((order) => {
             const orderAssignments = assignments.filter((a) => a.order_id === order.id);
             const totalOrderPrice = order.quantity * order.unit_price;
             const unassigned = getUnassignedQuantity(order, assignments);

@@ -58,9 +58,16 @@ export default function SessionCard({ session }: SessionCardProps) {
   };
 
   return (
-    <Link
-      href={`/session/${session.id}`}
-      className={`group relative block rounded-2xl bg-slate-800/90 border border-slate-700/80 p-4 sm:p-5 shadow-lg shadow-black/20 backdrop-blur-sm transition-all duration-200 hover:border-slate-500 hover:bg-slate-800 active:scale-[0.99] touch-manipulation ${
+    <div
+      onClick={() => router.push(`/session/${session.id}`)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          router.push(`/session/${session.id}`);
+        }
+      }}
+      className={`group relative block rounded-2xl bg-slate-800/90 border border-slate-700/80 p-4 sm:p-5 shadow-lg shadow-black/20 backdrop-blur-sm transition-all duration-200 hover:border-slate-500 hover:bg-slate-800 active:scale-[0.99] cursor-pointer touch-manipulation ${
         isDeleting || isPending ? 'opacity-50 pointer-events-none' : ''
       }`}
     >
@@ -94,11 +101,10 @@ export default function SessionCard({ session }: SessionCardProps) {
         </div>
 
         {/* Delete Action & Confirm */}
-        <div className="flex items-center">
+        <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
           {showConfirm ? (
             <div
-              onClick={(e) => e.stopPropagation()}
-              className="flex items-center gap-1.5 bg-slate-900/95 border border-slate-700 px-2 py-1 rounded-xl shadow-lg animate-fade-in"
+              className="flex items-center gap-1.5 bg-slate-900/95 border border-slate-700 px-2.5 py-1.5 rounded-xl shadow-lg animate-fade-in"
             >
               <span className="text-xs text-slate-300 font-medium mr-1 hidden xs:inline">
                 Delete?
@@ -107,7 +113,7 @@ export default function SessionCard({ session }: SessionCardProps) {
                 type="button"
                 onClick={handleConfirmDelete}
                 disabled={isDeleting || isPending}
-                className="px-2.5 py-1 text-xs font-semibold bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white rounded-lg transition-colors min-h-[32px] flex items-center justify-center"
+                className="px-3 py-1.5 text-xs font-semibold bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white rounded-lg transition-colors min-h-[36px] flex items-center justify-center"
               >
                 {isDeleting || isPending ? '...' : 'Yes'}
               </button>
@@ -115,7 +121,7 @@ export default function SessionCard({ session }: SessionCardProps) {
                 type="button"
                 onClick={handleCancelDelete}
                 disabled={isDeleting || isPending}
-                className="px-2 py-1 text-xs font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg transition-colors min-h-[32px] flex items-center justify-center"
+                className="px-3 py-1.5 text-xs font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg transition-colors min-h-[36px] flex items-center justify-center"
               >
                 No
               </button>
@@ -181,6 +187,6 @@ export default function SessionCard({ session }: SessionCardProps) {
           </svg>
         </span>
       </div>
-    </Link>
+    </div>
   );
 }

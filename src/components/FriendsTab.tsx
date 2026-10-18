@@ -32,18 +32,22 @@ export default function FriendsTab({
     formData.set('color', selectedColor);
 
     startTransition(async () => {
-      const res = await addParticipant(formData);
-      if (res.success) {
-        setName('');
-        // Rotate to next unused color
-        const nextColor =
-          PARTICIPANT_COLORS[
-            (participants.length + 1) % PARTICIPANT_COLORS.length
-          ];
-        setSelectedColor(nextColor);
-        setIsAddOpen(false);
-      } else {
-        setError(res.error || 'Failed to add friend');
+      try {
+        const res = await addParticipant(formData);
+        if (res.success) {
+          setName('');
+          // Rotate to next unused color
+          const nextColor =
+            PARTICIPANT_COLORS[
+              (participants.length + 1) % PARTICIPANT_COLORS.length
+            ];
+          setSelectedColor(nextColor);
+          setIsAddOpen(false);
+        } else {
+          setError(res.error || 'Failed to add friend');
+        }
+      } catch (err: any) {
+        setError(err?.message || 'Failed to add friend');
       }
     });
   };
@@ -51,7 +55,14 @@ export default function FriendsTab({
   const handleRemove = async (id: string, friendName: string) => {
     if (confirm(`Remove ${friendName} from this session? Their assigned items will be unassigned.`)) {
       startTransition(async () => {
-        await removeParticipant(id, sessionId);
+        try {
+          const res = await removeParticipant(id, sessionId);
+          if (!res.success) {
+            alert(res.error || `Failed to remove ${friendName}`);
+          }
+        } catch (err: any) {
+          alert(err?.message || `Failed to remove ${friendName}`);
+        }
       });
     }
   };

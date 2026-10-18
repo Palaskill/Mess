@@ -6,6 +6,11 @@ import { usePathname } from 'next/navigation';
 export default function BottomNav() {
   const pathname = usePathname();
 
+  // Hide BottomNav on active session pages so it doesn't collide with session tabs and sticky order buttons
+  if (pathname.startsWith('/session/')) {
+    return null;
+  }
+
   const navItems = [
     {
       href: '/',

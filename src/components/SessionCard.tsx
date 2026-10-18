@@ -40,10 +40,17 @@ export default function SessionCard({ session }: SessionCardProps) {
 
     startTransition(async () => {
       try {
-        await deleteSession(session.id);
-        router.refresh();
-      } catch (err) {
+        const res = await deleteSession(session.id);
+        if (res.success) {
+          router.refresh();
+        } else {
+          alert(res.error || 'Failed to delete session');
+          setIsDeleting(false);
+          setShowConfirm(false);
+        }
+      } catch (err: any) {
         console.error('Failed to delete session:', err);
+        alert(err?.message || 'Failed to delete session');
         setIsDeleting(false);
         setShowConfirm(false);
       }

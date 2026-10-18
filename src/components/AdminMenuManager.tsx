@@ -41,26 +41,32 @@ export default function AdminMenuManager({ initialItems }: AdminMenuManagerProps
     setError(null);
 
     startTransition(async () => {
-      const res = await createMenuItem(formData);
-      if (res.success) {
-        setIsAddOpen(false);
-        // Refresh local state optimistically
-        const name = formData.get('name') as string;
-        const price = parseFloat(formData.get('price') as string);
-        const category = (formData.get('category') as any) || 'drinks';
-        const default_split = (formData.get('default_split') as any) || 'individual';
-        const newItem: MenuItem = {
-          id: crypto.randomUUID(),
-          name,
-          price,
-          category,
-          default_split,
-          is_active: true,
-          created_at: new Date().toISOString(),
-        };
-        setItems((prev) => [...prev, newItem]);
-      } else {
-        setError(res.error || 'Failed to create item');
+      try {
+        const res = await createMenuItem(formData);
+        if (res.success && res.data) {
+          setIsAddOpen(false);
+          setItems((prev) => [...prev, res.data!]);
+        } else if (res.success) {
+          setIsAddOpen(false);
+          const name = formData.get('name') as string;
+          const price = parseFloat(formData.get('price') as string);
+          const category = (formData.get('category') as any) || 'drinks';
+          const default_split = (formData.get('default_split') as any) || 'individual';
+          const newItem: MenuItem = {
+            id: crypto.randomUUID(),
+            name,
+            price,
+            category,
+            default_split,
+            is_active: true,
+            created_at: new Date().toISOString(),
+          };
+          setItems((prev) => [...prev, newItem]);
+        } else {
+          setError(res.error || 'Failed to create item');
+        }
+      } catch (err: any) {
+        setError(err?.message || 'Failed to create item');
       }
     });
   };
@@ -74,39 +80,49 @@ export default function AdminMenuManager({ initialItems }: AdminMenuManagerProps
     setError(null);
 
     startTransition(async () => {
-      const res = await updateMenuItem(formData);
-      if (res.success) {
-        const name = formData.get('name') as string;
-        const price = parseFloat(formData.get('price') as string);
-        const category = formData.get('category') as any;
-        const default_split = formData.get('default_split') as any;
-        const is_active = formData.get('is_active') === 'true';
+      try {
+        const res = await updateMenuItem(formData);
+        if (res.success) {
+          const name = formData.get('name') as string;
+          const price = parseFloat(formData.get('price') as string);
+          const category = formData.get('category') as any;
+          const default_split = formData.get('default_split') as any;
+          const is_active = formData.get('is_active') === 'true';
 
-        setItems((prev) =>
-          prev.map((i) =>
-            i.id === editingItem.id
-              ? { ...i, name, price, category, default_split, is_active }
-              : i
-          )
-        );
-        setEditingItem(null);
-      } else {
-        setError(res.error || 'Failed to update item');
+          setItems((prev) =>
+            prev.map((i) =>
+              i.id === editingItem.id
+                ? { ...i, name, price, category, default_split, is_active }
+                : i
+            )
+          );
+          setEditingItem(null);
+        } else {
+          setError(res.error || 'Failed to update item');
+        }
+      } catch (err: any) {
+        setError(err?.message || 'Failed to update item');
       }
     });
   };
 
   // Handle Delete Item
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: string, itemName: string) => {
+    if (!confirm(`Delete "${itemName}" from menu?`)) return;
     setDeletingId(id);
     startTransition(async () => {
-      const res = await deleteMenuItem(id);
-      if (res.success) {
-        setItems((prev) => prev.filter((i) => i.id !== id));
-      } else {
-        alert(res.error || 'Failed to delete item');
+      try {
+        const res = await deleteMenuItem(id);
+        if (res.success) {
+          setItems((prev) => prev.filter((i) => i.id !== id));
+        } else {
+          alert(res.error || 'Failed to delete item');
+        }
+      } catch (err: any) {
+        alert(err?.message || 'Failed to delete item');
+      } finally {
+        setDeletingId(null);
       }
-      setDeletingId(null);
     });
   };
 
@@ -219,7 +235,7 @@ export default function AdminMenuManager({ initialItems }: AdminMenuManagerProps
                     ✏️
                   </button>
                   <button
-                    onClick={() => handleDelete(item.id)}
+                    onClick={() => handleDelete(item.id, item.name)}
                     disabled={deletingId === item.id || isPending}
                     aria-label={`Delete ${item.name}`}
                     className="w-9 h-9 rounded-lg flex items-center justify-center bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition-colors disabled:opacity-50"

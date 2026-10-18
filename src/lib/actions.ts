@@ -119,7 +119,7 @@ export async function getActiveMenuItems(): Promise<MenuItem[]> {
   }
 }
 
-export async function createMenuItem(formData: FormData): Promise<{ success: boolean; error?: string }> {
+export async function createMenuItem(formData: FormData): Promise<{ success: boolean; data?: MenuItem; error?: string }> {
   try {
     const name = (formData.get('name') as string)?.trim();
     const priceStr = formData.get('price') as string;
@@ -136,7 +136,7 @@ export async function createMenuItem(formData: FormData): Promise<{ success: boo
     }
 
     const supabase = await getSupabase();
-    const { error } = await supabase.from('menu_items').insert([
+    const { data, error } = await supabase.from('menu_items').insert([
       {
         name,
         price,
@@ -144,7 +144,7 @@ export async function createMenuItem(formData: FormData): Promise<{ success: boo
         default_split,
         is_active: true,
       },
-    ]);
+    ]).select().single();
 
     if (error) {
       console.error('Error creating menu item:', error);
@@ -153,7 +153,7 @@ export async function createMenuItem(formData: FormData): Promise<{ success: boo
 
     revalidatePath('/admin');
     revalidatePath('/');
-    return { success: true };
+    return { success: true, data: data as MenuItem };
   } catch (err: any) {
     console.error('Failed to create menu item:', err);
     return { success: false, error: err?.message || 'Failed to create item' };

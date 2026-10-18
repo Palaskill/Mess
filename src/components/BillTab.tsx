@@ -18,12 +18,7 @@ interface BillTabProps {
   assignments: (Assignment & { participant: Participant })[];
 }
 
-interface TipConfig {
-  amount: number;
-  participantIds: string[]; // who's contributing to the tip
-}
-
-const TIP_PRESETS = [5, 10, 15, 20];
+const FIXED_TIP_PRESETS = [2, 5, 10, 15, 20];
 
 export default function BillTab({
   sessionId,
@@ -36,9 +31,7 @@ export default function BillTab({
   const [copied, setCopied] = useState(false);
   const [isPending, startTransition] = useTransition();
 
-  // Tip state
-  const [tipMode, setTipMode] = useState<'none' | 'percentage' | 'fixed'>('none');
-  const [tipPercentage, setTipPercentage] = useState(10);
+  // Tip state: always fixed amount
   const [tipFixed, setTipFixed] = useState('');
   const [tipParticipantIds, setTipParticipantIds] = useState<string[]>([]);
   const [showTipSection, setShowTipSection] = useState(false);
@@ -47,12 +40,11 @@ export default function BillTab({
   const total = calculateTotal(orders);
   const unassignedAmount = calculateUnassigned(orders, assignments);
 
-  // Calculate the tip amount
+  // Tip amount is always the parsed fixed amount
   const tipAmount = useMemo(() => {
-    if (tipMode === 'percentage') return total * (tipPercentage / 100);
-    if (tipMode === 'fixed') return parseFloat(tipFixed) || 0;
-    return 0;
-  }, [tipMode, tipPercentage, tipFixed, total]);
+    const parsed = parseFloat(tipFixed);
+    return !isNaN(parsed) && parsed > 0 ? parsed : 0;
+  }, [tipFixed]);
 
   // Calculate tip per participant
   const tipPerPerson = useMemo(() => {
@@ -95,10 +87,23 @@ export default function BillTab({
   // Initialize tip section
   const handleOpenTip = () => {
     setShowTipSection(true);
-    if (tipMode === 'none') setTipMode('percentage');
     if (tipParticipantIds.length === 0) {
       setTipParticipantIds(participants.map((p) => p.id));
     }
+  };
+
+  // Preset button handler
+  const handleSelectPreset = (amount: number) => {
+    setTipFixed(amount.toString());
+    if (tipParticipantIds.length === 0) {
+      setTipParticipantIds(participants.map((p) => p.id));
+    }
+  };
+
+  // Clear tip handler
+  const handleClearTip = () => {
+    setTipFixed('');
+    setShowTipSection(false);
   };
 
   // Copy breakdown to clipboard (great for sending into WhatsApp)
@@ -123,9 +128,7 @@ export default function BillTab({
     text += `──────────────\n`;
     text += `💰 *Subtotal*: $${total.toFixed(2)}\n`;
     if (tipAmount > 0) {
-      text += `💵 *Tip*: $${tipAmount.toFixed(2)}`;
-      if (tipMode === 'percentage') text += ` (${tipPercentage}%)`;
-      text += '\n';
+      text += `💵 *Tip*: $${tipAmount.toFixed(2)}\n`;
     }
     text += `🧾 *Grand Total*: $${grandTotalWithTip.toFixed(2)}\n`;
     if (unassignedAmount > 0) {
@@ -222,121 +225,74 @@ export default function BillTab({
           {/* Tip Configuration Panel */}
           {showTipSection && (
             <div className="p-4 pt-0 space-y-4 border-t border-slate-700/60">
-              {/* Tip Mode Selector */}
+              {/* Quick Fixed Amount Presets */}
               <div className="pt-3">
-                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">
-                  Tip Type
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setTipMode('percentage')}
-                    className={`p-2.5 rounded-xl border text-center text-xs font-bold transition-all min-h-[42px] ${
-                      tipMode === 'percentage'
-                        ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 shadow-sm'
-                        : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    📊 Percentage
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setTipMode('fixed')}
-                    className={`p-2.5 rounded-xl border text-center text-xs font-bold transition-all min-h-[42px] ${
-                      tipMode === 'fixed'
-                        ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 shadow-sm'
-                        : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    💲 Fixed Amount
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setTipMode('none');
-                      setShowTipSection(false);
-                    }}
-                    className={`p-2.5 rounded-xl border text-center text-xs font-bold transition-all min-h-[42px] ${
-                      tipMode === 'none'
-                        ? 'bg-slate-700 border-slate-600 text-white shadow-sm'
-                        : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    ❌ No Tip
-                  </button>
-                </div>
-              </div>
-
-              {/* Percentage Amount */}
-              {tipMode === 'percentage' && (
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">
-                    How much? (% of ${total.toFixed(2)})
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                    Tip Amount ($)
                   </label>
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {TIP_PRESETS.map((pct) => (
+                  {tipAmount > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleClearTip}
+                      className="text-[11px] font-semibold text-rose-400 hover:text-rose-300"
+                    >
+                      Remove tip
+                    </button>
+                  )}
+                </div>
+
+                {/* Quick Presets */}
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {FIXED_TIP_PRESETS.map((amt) => {
+                    const isSelected = tipAmount === amt;
+                    return (
                       <button
-                        key={pct}
+                        key={amt}
                         type="button"
-                        onClick={() => setTipPercentage(pct)}
-                        className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all min-h-[38px] ${
-                          tipPercentage === pct
+                        onClick={() => handleSelectPreset(amt)}
+                        className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all min-h-[38px] active:scale-95 ${
+                          isSelected
                             ? 'bg-emerald-600 text-white shadow-md ring-2 ring-emerald-400/40'
                             : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
                         }`}
                       >
-                        {pct}%
+                        ${amt}
                       </button>
-                    ))}
-                    <div className="flex items-center gap-1.5 bg-slate-800 rounded-xl border border-slate-700 px-3 min-h-[38px]">
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        step="1"
-                        value={tipPercentage}
-                        onChange={(e) => setTipPercentage(Math.max(0, parseInt(e.target.value) || 0))}
-                        className="w-12 bg-transparent text-white text-xs font-bold text-center focus:outline-none"
-                      />
-                      <span className="text-xs text-slate-400 font-semibold">%</span>
-                    </div>
-                  </div>
-                  <div className="text-sm font-extrabold text-emerald-400 flex items-center gap-1.5">
-                    <span>💵</span>
-                    <span>Tip amount: ${tipAmount.toFixed(2)}</span>
-                  </div>
+                    );
+                  })}
                 </div>
-              )}
 
-              {/* Fixed Amount */}
-              {tipMode === 'fixed' && (
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">
-                    Tip Amount ($)
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <span className="text-slate-400 font-bold text-sm">$</span>
-                    <input
-                      type="number"
-                      step="0.50"
-                      min="0"
-                      value={tipFixed}
-                      onChange={(e) => setTipFixed(e.target.value)}
-                      placeholder="5.00"
-                      className="flex-1 px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 text-sm font-bold min-h-[42px]"
-                    />
-                  </div>
-                  {tipAmount > 0 && (
-                    <p className="mt-2 text-sm font-extrabold text-emerald-400 flex items-center gap-1.5">
-                      <span>💵</span>
-                      <span>Tip: ${tipAmount.toFixed(2)}</span>
-                    </p>
-                  )}
+                {/* Custom Fixed Amount Input */}
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-400 font-bold text-sm">$</span>
+                  <input
+                    type="number"
+                    step="0.50"
+                    min="0"
+                    inputMode="decimal"
+                    value={tipFixed}
+                    onChange={(e) => {
+                      setTipFixed(e.target.value);
+                      if (tipParticipantIds.length === 0) {
+                        setTipParticipantIds(participants.map((p) => p.id));
+                      }
+                    }}
+                    placeholder="Enter fixed amount (e.g. 5.00)"
+                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 text-sm font-bold min-h-[42px]"
+                  />
                 </div>
-              )}
+
+                {tipAmount > 0 && (
+                  <p className="mt-2 text-sm font-extrabold text-emerald-400 flex items-center gap-1.5">
+                    <span>💵</span>
+                    <span>Total Tip: ${tipAmount.toFixed(2)}</span>
+                  </p>
+                )}
+              </div>
 
               {/* Who contributes to the tip? */}
-              {tipMode !== 'none' && tipAmount > 0 && (
+              {tipAmount > 0 && (
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
@@ -507,7 +463,7 @@ export default function BillTab({
           <div className="flex items-center justify-between text-emerald-400 text-sm">
             <span className="flex items-center gap-1">
               <span>💵</span>
-              <span>Tip {tipMode === 'percentage' ? `(${tipPercentage}%)` : ''}</span>
+              <span>Tip</span>
             </span>
             <span className="font-bold">+${tipAmount.toFixed(2)}</span>
           </div>

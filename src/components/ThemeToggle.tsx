@@ -76,10 +76,10 @@ export default function ThemeToggle({
         type="button"
         onClick={cycleNext}
         title={`Current theme: ${label}. Tap to change.`}
-        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-slate-700/60 bg-slate-800/80 hover:bg-slate-700 text-xs font-semibold text-slate-200 transition-all active:scale-95 ${className}`}
+        className={`flex items-center gap-1.5 px-3 py-2 rounded-2xl border border-slate-700/60 bg-slate-800/80 hover:bg-slate-700 active:bg-slate-650 text-xs font-bold text-slate-200 transition-all active:scale-95 min-h-[40px] touch-manipulation shadow-sm ${className}`}
       >
         <span className="text-sm leading-none">{icon}</span>
-        <span className="text-[11px] capitalize">{label}</span>
+        <span className="text-xs capitalize">{label}</span>
       </button>
     );
   }
@@ -89,7 +89,7 @@ export default function ThemeToggle({
     <div
       role="radiogroup"
       aria-label="Theme mode selector"
-      className={`inline-flex items-center p-1 rounded-xl bg-slate-800/80 border border-slate-700/70 backdrop-blur-sm ${className}`}
+      className={`inline-flex items-center p-1 rounded-2xl bg-slate-800/80 border border-slate-700/70 backdrop-blur-sm shadow-sm ${className}`}
     >
       <button
         type="button"
@@ -97,7 +97,7 @@ export default function ThemeToggle({
         aria-checked={theme === 'light'}
         onClick={() => handleSelectTheme('light')}
         title="Light theme"
-        className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition-all min-h-[30px] touch-manipulation ${
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all min-h-[36px] touch-manipulation active:scale-95 ${
           theme === 'light'
             ? 'bg-amber-400/20 text-amber-300 border border-amber-400/40 shadow-sm'
             : 'text-slate-400 hover:text-slate-200'
@@ -113,7 +113,7 @@ export default function ThemeToggle({
         aria-checked={theme === 'dark'}
         onClick={() => handleSelectTheme('dark')}
         title="Dark theme"
-        className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition-all min-h-[30px] touch-manipulation ${
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all min-h-[36px] touch-manipulation active:scale-95 ${
           theme === 'dark'
             ? 'bg-blue-600/30 text-blue-300 border border-blue-500/40 shadow-sm'
             : 'text-slate-400 hover:text-slate-200'
@@ -129,7 +129,7 @@ export default function ThemeToggle({
         aria-checked={theme === 'auto'}
         onClick={() => handleSelectTheme('auto')}
         title="Auto theme (matches phone/system)"
-        className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition-all min-h-[30px] touch-manipulation ${
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all min-h-[36px] touch-manipulation active:scale-95 ${
           theme === 'auto'
             ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
             : 'text-slate-400 hover:text-slate-200'

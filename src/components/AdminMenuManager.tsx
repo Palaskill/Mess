@@ -251,17 +251,29 @@ export default function AdminMenuManager({ initialItems }: AdminMenuManagerProps
 
       {/* Add Item Bottom Sheet / Modal */}
       {isAddOpen && (
-        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-md bg-slate-900 border-t sm:border border-slate-700 rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl animate-slide-up max-h-[85dvh] overflow-y-auto overscroll-contain pb-[max(6rem,env(safe-area-inset-bottom))] sm:pb-6">
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsAddOpen(false);
+          }}
+        >
+          <div
+            className="w-full max-w-md bg-slate-900 border-t sm:border border-slate-700/80 rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl animate-slide-up max-h-[85dvh] overflow-y-auto overscroll-contain pb-[max(6rem,env(safe-area-inset-bottom))] sm:pb-6"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Grab handle for mobile */}
-            <div className="w-12 h-1.5 bg-slate-700 rounded-full mx-auto mb-4 sm:hidden" />
+            <div className="w-12 h-1.5 bg-slate-600 rounded-full mx-auto mb-4 sm:hidden shrink-0" />
             <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
                 <span>➕</span> Add Menu Item
               </h3>
               <button
+                type="button"
                 onClick={() => setIsAddOpen(false)}
-                className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white"
+                aria-label="Close dialog"
+                className="w-10 h-10 rounded-full bg-slate-800 active:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white active:scale-95 transition-all touch-manipulation"
               >
                 ✕
               </button>
@@ -283,7 +295,7 @@ export default function AdminMenuManager({ initialItems }: AdminMenuManagerProps
                   name="name"
                   required
                   placeholder="e.g. Draught Beer, Margherita Pizza"
-                  className="w-full px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                  className="w-full px-4 py-3.5 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 text-base min-h-[48px]"
                 />
               </div>
 
@@ -296,9 +308,10 @@ export default function AdminMenuManager({ initialItems }: AdminMenuManagerProps
                   name="price"
                   step="0.01"
                   min="0"
+                  inputMode="decimal"
                   required
                   placeholder="4.50"
-                  className="w-full px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                  className="w-full px-4 py-3.5 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 text-base min-h-[48px]"
                 />
               </div>
 
@@ -349,17 +362,29 @@ export default function AdminMenuManager({ initialItems }: AdminMenuManagerProps
 
       {/* Edit Item Modal */}
       {editingItem && (
-        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-md bg-slate-900 border-t sm:border border-slate-700 rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl animate-slide-up max-h-[85dvh] overflow-y-auto overscroll-contain pb-[max(6rem,env(safe-area-inset-bottom))] sm:pb-6">
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setEditingItem(null);
+          }}
+        >
+          <div
+            className="w-full max-w-md bg-slate-900 border-t sm:border border-slate-700/80 rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl animate-slide-up max-h-[85dvh] overflow-y-auto overscroll-contain pb-[max(6rem,env(safe-area-inset-bottom))] sm:pb-6"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Grab handle for mobile */}
-            <div className="w-12 h-1.5 bg-slate-700 rounded-full mx-auto mb-4 sm:hidden" />
+            <div className="w-12 h-1.5 bg-slate-600 rounded-full mx-auto mb-4 sm:hidden shrink-0" />
             <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
                 <span>✏️</span> Edit Item
               </h3>
               <button
+                type="button"
                 onClick={() => setEditingItem(null)}
-                className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white"
+                aria-label="Close dialog"
+                className="w-10 h-10 rounded-full bg-slate-800 active:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white active:scale-95 transition-all touch-manipulation"
               >
                 ✕
               </button>
@@ -381,7 +406,7 @@ export default function AdminMenuManager({ initialItems }: AdminMenuManagerProps
                   name="name"
                   defaultValue={editingItem.name}
                   required
-                  className="w-full px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-blue-500"
+                  className="w-full px-4 py-3.5 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-blue-500 text-base min-h-[48px]"
                 />
               </div>
 
@@ -394,9 +419,10 @@ export default function AdminMenuManager({ initialItems }: AdminMenuManagerProps
                   name="price"
                   step="0.01"
                   min="0"
+                  inputMode="decimal"
                   defaultValue={editingItem.price}
                   required
-                  className="w-full px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-blue-500"
+                  className="w-full px-4 py-3.5 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-blue-500 text-base min-h-[48px]"
                 />
               </div>
 

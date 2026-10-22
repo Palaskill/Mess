@@ -142,7 +142,7 @@ export default function FriendsTab({
                   onClick={() => handleRemove(p.id, p.name)}
                   disabled={isPending}
                   aria-label={`Remove ${p.name}`}
-                  className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                  className="w-11 h-11 rounded-xl flex items-center justify-center text-slate-400 hover:text-rose-400 active:text-rose-500 hover:bg-rose-500/10 active:bg-rose-500/20 active:scale-90 transition-all touch-manipulation"
                 >
                   ✕
                 </button>
@@ -154,10 +154,20 @@ export default function FriendsTab({
 
       {/* Add Friend Bottom Sheet */}
       {isAddOpen && (
-        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-md bg-slate-900 border-t sm:border border-slate-700 rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl animate-slide-up max-h-[85dvh] overflow-y-auto overscroll-contain pb-[max(6rem,env(safe-area-inset-bottom))] sm:pb-6">
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsAddOpen(false);
+          }}
+        >
+          <div
+            className="w-full max-w-md bg-slate-900 border-t sm:border border-slate-700/80 rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl animate-slide-up max-h-[85dvh] overflow-y-auto overscroll-contain pb-[max(6rem,env(safe-area-inset-bottom))] sm:pb-6"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Grab handle for mobile */}
-            <div className="w-12 h-1.5 bg-slate-700 rounded-full mx-auto mb-4 sm:hidden" />
+            <div className="w-12 h-1.5 bg-slate-600 rounded-full mx-auto mb-4 sm:hidden shrink-0" />
 
             <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
@@ -166,7 +176,8 @@ export default function FriendsTab({
               <button
                 type="button"
                 onClick={() => setIsAddOpen(false)}
-                className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white"
+                aria-label="Close dialog"
+                className="w-10 h-10 rounded-full bg-slate-800 active:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white active:scale-95 transition-all touch-manipulation"
               >
                 ✕
               </button>
@@ -189,8 +200,11 @@ export default function FriendsTab({
                   onChange={(e) => setName(e.target.value)}
                   autoFocus
                   required
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck={false}
                   placeholder="e.g. Karim, Sarah, Alex"
-                  className="w-full px-4 py-3.5 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 text-base"
+                  className="w-full px-4 py-3.5 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 text-base min-h-[48px]"
                 />
               </div>
 
@@ -203,14 +217,19 @@ export default function FriendsTab({
                     <button
                       key={color}
                       type="button"
+                      aria-label={`Select color ${color}`}
                       onClick={() => setSelectedColor(color)}
-                      className={`w-9 h-9 rounded-full transition-transform ${
+                      className={`w-11 h-11 rounded-full transition-transform touch-manipulation active:scale-95 flex items-center justify-center ${
                         selectedColor === color
-                          ? 'ring-4 ring-white/60 scale-110 shadow-lg'
+                          ? 'ring-4 ring-white/70 scale-110 shadow-lg'
                           : 'hover:scale-105 opacity-80 hover:opacity-100'
                       }`}
                       style={{ backgroundColor: color }}
-                    />
+                    >
+                      {selectedColor === color && (
+                        <span className="text-white text-xs font-black drop-shadow">✓</span>
+                      )}
+                    </button>
                   ))}
                 </div>
               </div>
@@ -219,7 +238,7 @@ export default function FriendsTab({
                 <button
                   type="submit"
                   disabled={isPending || !name.trim()}
-                  className="w-full py-4 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-base shadow-lg shadow-blue-600/30 active:scale-98 transition-all disabled:opacity-50 min-h-[52px]"
+                  className="w-full py-4 px-4 rounded-2xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-bold text-base shadow-lg shadow-blue-600/30 active:scale-98 transition-all disabled:opacity-50 min-h-[52px] touch-manipulation"
                 >
                   {isPending ? 'Adding...' : 'Add Friend'}
                 </button>

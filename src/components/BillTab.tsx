@@ -106,8 +106,8 @@ export default function BillTab({
     setShowTipSection(false);
   };
 
-  // Copy breakdown to clipboard (great for sending into WhatsApp)
-  const handleCopySummary = () => {
+  // Generate formatted text breakdown
+  const generateSummaryText = () => {
     let text = `🍻 *${sessionName} — Bar Tab Split*\n\n`;
 
     finalBills.forEach((b) => {
@@ -135,10 +135,31 @@ export default function BillTab({
       text += `⚠️ *Unassigned Items*: $${unassignedAmount.toFixed(2)}\n`;
     }
     text += `\nShared via MEss 🍺`;
+    return text;
+  };
 
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
+  // Share via iOS native share sheet (WhatsApp, Messages, etc.) or clipboard fallback
+  const handleShareTab = async () => {
+    const text = generateSummaryText();
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: `${sessionName} — Bill Split`,
+          text: text,
+        });
+        return;
+      } catch (err: any) {
+        if (err.name === 'AbortError') return; // User closed share sheet
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      // Fallback
+    }
   };
 
   const handleCloseSession = () => {
@@ -163,10 +184,10 @@ export default function BillTab({
         </div>
 
         <button
-          onClick={handleCopySummary}
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 active:scale-95 transition-all min-h-[40px]"
+          onClick={handleShareTab}
+          className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white text-xs font-bold shadow-lg shadow-blue-600/30 active:scale-95 transition-all min-h-[44px] touch-manipulation"
         >
-          <span>{copied ? '✓ Copied!' : '📋 Copy Tab'}</span>
+          <span>{copied ? '✓ Copied!' : '📤 Share Tab'}</span>
         </button>
       </div>
 
@@ -251,7 +272,7 @@ export default function BillTab({
                         key={amt}
                         type="button"
                         onClick={() => handleSelectPreset(amt)}
-                        className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all min-h-[38px] active:scale-95 ${
+                        className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition-all min-h-[44px] touch-manipulation active:scale-95 ${
                           isSelected
                             ? 'bg-emerald-600 text-white shadow-md ring-2 ring-emerald-400/40'
                             : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
@@ -279,7 +300,7 @@ export default function BillTab({
                       }
                     }}
                     placeholder="Enter fixed amount (e.g. 5.00)"
-                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 text-sm font-bold min-h-[42px]"
+                    className="flex-1 px-4 py-3 rounded-2xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 text-base font-bold min-h-[46px]"
                   />
                 </div>
 
@@ -298,11 +319,11 @@ export default function BillTab({
                     <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
                       <span>👥</span> Who&apos;s tipping?
                     </label>
-                    <div className="flex items-center gap-2 text-[11px]">
+                    <div className="flex items-center gap-2 text-xs">
                       <button
                         type="button"
                         onClick={selectAllForTip}
-                        className="text-blue-400 hover:text-blue-300 font-semibold"
+                        className="text-blue-400 hover:text-blue-300 font-bold px-2 py-1 min-h-[36px] flex items-center touch-manipulation"
                       >
                         All
                       </button>
@@ -310,7 +331,7 @@ export default function BillTab({
                       <button
                         type="button"
                         onClick={clearAllForTip}
-                        className="text-slate-400 hover:text-slate-300 font-semibold"
+                        className="text-slate-400 hover:text-slate-300 font-bold px-2 py-1 min-h-[36px] flex items-center touch-manipulation"
                       >
                         None
                       </button>
@@ -325,7 +346,7 @@ export default function BillTab({
                           key={p.id}
                           type="button"
                           onClick={() => toggleTipParticipant(p.id)}
-                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all min-h-[36px] touch-manipulation active:scale-95 ${
+                          className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl text-xs font-semibold transition-all min-h-[40px] touch-manipulation active:scale-95 ${
                             isSelected
                               ? 'bg-emerald-600 text-white ring-2 ring-emerald-400/40 shadow-sm'
                               : 'bg-slate-800 text-slate-400 border border-slate-700 hover:text-white'

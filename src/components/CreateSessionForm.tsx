@@ -120,7 +120,7 @@ export default function CreateSessionForm({
           type="button"
           onClick={handleOpen}
           aria-label="Create new session"
-          className="fixed bottom-20 right-4 sm:right-6 z-40 flex items-center gap-2.5 px-5 py-3.5 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 active:scale-95 text-white font-semibold shadow-xl shadow-blue-900/40 border border-blue-400/30 transition-all duration-200 touch-manipulation min-h-[48px]"
+          className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-4 sm:right-6 z-40 flex items-center gap-2.5 px-5 py-3.5 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 active:scale-95 text-white font-bold shadow-xl shadow-blue-900/40 border border-blue-400/30 transition-all duration-200 touch-manipulation min-h-[50px]"
         >
           <span className="text-xl leading-none select-none">✨</span>
           <span className="text-sm tracking-wide">New Session</span>
@@ -168,7 +168,7 @@ export default function CreateSessionForm({
                 onClick={handleClose}
                 disabled={isPending}
                 aria-label="Close dialog"
-                className="w-10 h-10 -mr-2 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                className="w-11 h-11 -mr-2 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 active:bg-slate-700 active:scale-95 transition-all touch-manipulation"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -196,6 +196,9 @@ export default function CreateSessionForm({
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Friday Drinks at Mulligan's"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck={false}
                   disabled={isPending}
                   maxLength={50}
                   className="w-full px-4 py-3 bg-slate-800/90 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all min-h-[48px] text-base"

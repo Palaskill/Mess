@@ -40,31 +40,32 @@ export default function SessionView({
   }, 0);
 
   return (
-    <div className="min-h-full pb-32">
-      <div className="max-w-xl mx-auto px-4 pt-4 sm:pt-6">
+    <div className="min-h-full pb-36">
+      <div className="max-w-xl mx-auto px-4 pt-2 sm:pt-4">
         {/* Top bar with back button and session info */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-3 pt-1">
           <Link
             href="/"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-white bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-700/60 active:scale-95 transition-all"
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-300 hover:text-white bg-slate-800/90 active:bg-slate-700 px-3.5 py-2 rounded-2xl border border-slate-700/70 shadow-sm active:scale-95 transition-all min-h-[40px] touch-manipulation"
           >
-            ← Back
+            <span className="text-base leading-none">‹</span>
+            <span>Sessions</span>
           </Link>
 
           <div className="flex items-center gap-2">
             <span
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${
                 !isClosed
                   ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
                   : 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
               }`}
             >
               <span
-                className={`w-1.5 h-1.5 rounded-full ${
+                className={`w-2 h-2 rounded-full ${
                   !isClosed ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'
                 }`}
               />
-              {!isClosed ? 'Active Session' : 'Closed Tab'}
+              {!isClosed ? 'Active' : 'Closed'}
             </span>
 
             <ThemeToggle variant="compact" />
@@ -72,13 +73,13 @@ export default function SessionView({
         </div>
 
         {/* Session Name Title */}
-        <div className="mb-6">
+        <div className="mb-4">
           <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-2">
             <span>🍻</span>
             <span className="truncate">{session.name}</span>
           </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Created on{' '}
+          <p className="text-[11px] text-slate-400 mt-0.5">
+            Opened{' '}
             {new Date(session.created_at).toLocaleDateString([], {
               month: 'short',
               day: 'numeric',
@@ -88,78 +89,84 @@ export default function SessionView({
           </p>
         </div>
 
-        {/* 3 Main Tabs */}
-        <div className="grid grid-cols-3 gap-1.5 p-1.5 rounded-2xl bg-slate-800/90 border border-slate-700/80 mb-6 shadow-inner">
-          <button
-            onClick={() => setActiveTab('orders')}
-            className={`flex flex-col items-center justify-center py-2.5 px-2 rounded-xl text-xs font-bold transition-all min-h-[48px] relative ${
-              activeTab === 'orders'
-                ? 'bg-blue-600 text-white shadow-md'
-                : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
-            }`}
-          >
-            <div className="flex items-center gap-1.5">
-              <span>📝</span>
-              <span>Orders</span>
-              {orders.length > 0 && (
-                <span
-                  className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${
-                    activeTab === 'orders' ? 'bg-blue-800 text-white' : 'bg-slate-700 text-slate-300'
-                  }`}
-                >
-                  {orders.length}
+        {/* 3 Main Sticky Tabs (iOS Segmented Control Style) */}
+        <div className="sticky top-0 z-30 py-2.5 backdrop-blur-xl bg-slate-900/85 -mx-4 px-4 sm:mx-0 sm:px-0">
+          <div className="grid grid-cols-3 gap-1.5 p-1.5 rounded-2xl bg-slate-800/90 border border-slate-700/80 shadow-lg shadow-black/20">
+            <button
+              onClick={() => setActiveTab('orders')}
+              className={`flex flex-col items-center justify-center py-2.5 px-2 rounded-xl text-xs font-bold transition-all min-h-[50px] relative active:scale-98 touch-manipulation ${
+                activeTab === 'orders'
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-900/40'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+              }`}
+            >
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm">📝</span>
+                <span>Orders</span>
+                {orders.length > 0 && (
+                  <span
+                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
+                      activeTab === 'orders' ? 'bg-blue-800 text-white' : 'bg-slate-700 text-slate-300'
+                    }`}
+                  >
+                    {orders.length}
+                  </span>
+                )}
+              </div>
+              {totalUnassignedUnits > 0 ? (
+                <span className="text-[9px] text-amber-300 font-extrabold mt-0.5">
+                  ⚠️ {totalUnassignedUnits} unassigned
+                </span>
+              ) : (
+                <span className="text-[9px] text-slate-400 font-normal mt-0.5 opacity-80">
+                  {orders.length} items
                 </span>
               )}
-            </div>
-            {totalUnassignedUnits > 0 && (
-              <span className="text-[10px] text-amber-300 font-semibold mt-0.5">
-                ⚠️ {totalUnassignedUnits} unassigned
+            </button>
+
+            <button
+              onClick={() => setActiveTab('friends')}
+              className={`flex flex-col items-center justify-center py-2.5 px-2 rounded-xl text-xs font-bold transition-all min-h-[50px] relative active:scale-98 touch-manipulation ${
+                activeTab === 'friends'
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-900/40'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+              }`}
+            >
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm">👥</span>
+                <span>Friends</span>
+                {participants.length > 0 && (
+                  <span
+                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
+                      activeTab === 'friends' ? 'bg-blue-800 text-white' : 'bg-slate-700 text-slate-300'
+                    }`}
+                  >
+                    {participants.length}
+                  </span>
+                )}
+              </div>
+              <span className="text-[9px] text-slate-400 font-normal mt-0.5 opacity-80">
+                {participants.length} seated
               </span>
-            )}
-          </button>
+            </button>
 
-          <button
-            onClick={() => setActiveTab('friends')}
-            className={`flex flex-col items-center justify-center py-2.5 px-2 rounded-xl text-xs font-bold transition-all min-h-[48px] ${
-              activeTab === 'friends'
-                ? 'bg-blue-600 text-white shadow-md'
-                : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
-            }`}
-          >
-            <div className="flex items-center gap-1.5">
-              <span>👥</span>
-              <span>Friends</span>
-              {participants.length > 0 && (
-                <span
-                  className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${
-                    activeTab === 'friends' ? 'bg-blue-800 text-white' : 'bg-slate-700 text-slate-300'
-                  }`}
-                >
-                  {participants.length}
-                </span>
-              )}
-            </div>
-            <span className="text-[10px] text-slate-400 font-normal mt-0.5">
-              {participants.length} at table
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('bill')}
-            className={`flex flex-col items-center justify-center py-2.5 px-2 rounded-xl text-xs font-bold transition-all min-h-[48px] ${
-              activeTab === 'bill'
-                ? 'bg-blue-600 text-white shadow-md'
-                : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
-            }`}
-          >
-            <div className="flex items-center gap-1.5">
-              <span>💰</span>
-              <span>The Bill</span>
-            </div>
-            <span className="text-[10px] text-emerald-400 font-semibold mt-0.5">
-              Split tab
-            </span>
-          </button>
+            <button
+              onClick={() => setActiveTab('bill')}
+              className={`flex flex-col items-center justify-center py-2.5 px-2 rounded-xl text-xs font-bold transition-all min-h-[50px] relative active:scale-98 touch-manipulation ${
+                activeTab === 'bill'
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-900/40'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+              }`}
+            >
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm">💰</span>
+                <span>The Bill</span>
+              </div>
+              <span className="text-[9px] text-emerald-400 font-extrabold mt-0.5">
+                Split tab
+              </span>
+            </button>
+          </div>
         </div>
 
         {/* Tab Contents */}

@@ -29,9 +29,9 @@ export default function BottomNav() {
   return (
     <nav
       aria-label="Bottom Navigation"
-      className="fixed bottom-0 left-0 right-0 z-50 backdrop-blur-lg bg-slate-900/80 border-t border-slate-700 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+      className="fixed bottom-0 left-0 right-0 z-50 backdrop-blur-xl bg-slate-900/90 border-t border-slate-800/80 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-1"
     >
-      <div className="max-w-md mx-auto px-4 flex items-center justify-around h-16">
+      <div className="max-w-md mx-auto px-6 flex items-center justify-around h-14">
         {navItems.map((item) => {
           const active = item.isActive;
           return (
@@ -39,16 +39,16 @@ export default function BottomNav() {
               key={item.href}
               href={item.href}
               aria-current={active ? 'page' : undefined}
-              className={`flex flex-col items-center justify-center min-h-[44px] min-w-[64px] px-4 py-1.5 rounded-lg transition-colors duration-200 ${
+              className={`flex flex-col items-center justify-center min-h-[44px] min-w-[68px] px-3 py-1 rounded-2xl transition-all duration-150 active:scale-95 ${
                 active
-                  ? 'text-blue-400 font-semibold'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'text-blue-400 font-bold'
+                  : 'text-slate-400 hover:text-slate-200 active:opacity-70'
               }`}
             >
-              <span className="text-xl leading-none mb-1 select-none" role="img" aria-hidden="true">
+              <span className={`text-xl leading-none mb-1 select-none transition-transform duration-150 ${active ? 'scale-110' : ''}`} role="img" aria-hidden="true">
                 {item.icon}
               </span>
-              <span className="text-xs font-medium tracking-wide">
+              <span className="text-[11px] font-semibold tracking-tight">
                 {item.label}
               </span>
             </Link>

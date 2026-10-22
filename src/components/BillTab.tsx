@@ -39,6 +39,7 @@ export default function BillTab({
   const bills = calculateBills(orders, assignments, participants);
   const total = calculateTotal(orders);
   const unassignedAmount = calculateUnassigned(orders, assignments);
+  const pendingWeightOrders = orders.filter((o) => Number(o.unit_price) === 0);
 
   // Tip amount is always the parsed fixed amount
   const tipAmount = useMemo(() => {
@@ -201,6 +202,21 @@ export default function BillTab({
             </h4>
             <p className="text-xs text-amber-200/80 mt-0.5">
               Some ordered drinks or items haven&apos;t been claimed yet. Check the Orders tab.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Pending weight/cheese items alert */}
+      {pendingWeightOrders.length > 0 && (
+        <div className="p-3.5 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-start gap-3">
+          <span className="text-xl shrink-0">🧀</span>
+          <div>
+            <h4 className="text-sm font-bold text-amber-300">
+              {pendingWeightOrders.length} article(s) au grammage sans prix défini ($0)
+            </h4>
+            <p className="text-xs text-amber-200/80 mt-0.5">
+              Rendez-vous dans l&apos;onglet <strong>Commandes</strong> pour ajuster le montant exact ou le poids dès réception de l&apos;addition.
             </p>
           </div>
         </div>

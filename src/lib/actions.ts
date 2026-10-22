@@ -104,6 +104,8 @@ export async function getActiveMenuItems(): Promise<MenuItem[]> {
     const POPULAR_WEIGHTS: Record<string, number> = {
       beer: 100,
       pizza: 95,
+      fromage: 92,
+      cheese: 92,
       fries: 85,
       wings: 80,
       cola: 75,
@@ -681,6 +683,46 @@ export async function deleteOrder(id: string, sessionId: string): Promise<{ succ
   } catch (err: any) {
     console.error('Failed to delete order:', err);
     return { success: false, error: err?.message || 'Failed to delete order' };
+  }
+}
+
+export async function updateOrder(
+  id: string,
+  sessionId: string,
+  updates: {
+    unit_price?: number;
+    item_name?: string;
+    quantity?: number;
+  }
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const supabase = await getSupabase();
+    const payload: any = {};
+    if (updates.unit_price !== undefined) {
+      payload.unit_price = updates.unit_price;
+    }
+    if (updates.item_name !== undefined) {
+      payload.item_name = updates.item_name.trim();
+    }
+    if (updates.quantity !== undefined) {
+      payload.quantity = updates.quantity;
+    }
+
+    const { error } = await supabase
+      .from('orders')
+      .update(payload)
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error updating order:', error);
+      return { success: false, error: error.message };
+    }
+
+    revalidatePath(`/session/${sessionId}`);
+    return { success: true };
+  } catch (err: any) {
+    console.error('Failed to update order:', err);
+    return { success: false, error: err?.message || 'Failed to update order' };
   }
 }
 

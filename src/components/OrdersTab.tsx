@@ -11,6 +11,7 @@ import {
   createBatchOrders,
   CreateBatchOrderItem,
   deleteOrder,
+  updateOrder,
   assignItem,
   unassignItem,
   toggleSharedAssignment,
@@ -62,6 +63,15 @@ export default function OrdersTab({
 
   // Assign modal state (for individual items already placed)
   const [assigningOrder, setAssigningOrder] = useState<Order | null>(null);
+
+  // Weight / Grammage / Bill Price adjustment modal state
+  const [editingWeightOrder, setEditingWeightOrder] = useState<Order | null>(null);
+  const [weightMode, setWeightMode] = useState<'total' | 'grammage'>('total');
+  const [weightItemName, setWeightItemName] = useState('');
+  const [weightPriceInput, setWeightPriceInput] = useState('');
+  const [weightGramsInput, setWeightGramsInput] = useState('');
+  const [weightRatePer100g, setWeightRatePer100g] = useState('');
+  const [weightError, setWeightError] = useState<string | null>(null);
 
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -195,9 +205,9 @@ export default function OrdersTab({
   const handleAddCustomItem = (e: React.FormEvent) => {
     e.preventDefault();
     const name = customName.trim();
-    const price = parseFloat(customPrice);
-    if (!name || isNaN(price) || price < 0) {
-      setError('Please provide a valid item name and price');
+    const parsedPrice = customPrice.trim() === '' ? 0 : parseFloat(customPrice);
+    if (!name || isNaN(parsedPrice) || parsedPrice < 0) {
+      setError('Please provide a valid item name (price can be 0 for weight items)');
       return;
     }
 
@@ -206,7 +216,7 @@ export default function OrdersTab({
       {
         id: `custom-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
         name,
-        unitPrice: price,
+        unitPrice: parsedPrice,
         quantity: customQuantity,
         category: customCategory,
         splitType: customSplitType,
@@ -328,6 +338,94 @@ export default function OrdersTab({
         }
       });
     }
+  };
+
+  // Open modal to adjust price or weight for an order
+  const handleOpenWeightModal = (order: Order) => {
+    setEditingWeightOrder(order);
+    setWeightItemName(order.item_name);
+    setWeightPriceInput(order.unit_price > 0 ? String(order.unit_price) : '');
+
+    // Check if name has existing gram info like "(250g)"
+    const gramMatch = order.item_name.match(/\((\d+(?:\.\d+)?)g\)/i);
+    if (gramMatch && gramMatch[1]) {
+      setWeightGramsInput(gramMatch[1]);
+      if (order.unit_price > 0) {
+        const parsedGrams = parseFloat(gramMatch[1]);
+        if (parsedGrams > 0) {
+          const derivedRate = Math.round(((order.unit_price * 100) / parsedGrams) * 100) / 100;
+          setWeightRatePer100g(String(derivedRate));
+        }
+      }
+    } else {
+      setWeightGramsInput('');
+      setWeightRatePer100g('');
+    }
+
+    setWeightError(null);
+    setWeightMode('total');
+  };
+
+  // Save updated price / weight with 0ms optimistic UI
+  const handleSaveWeightOrder = async () => {
+    if (!editingWeightOrder) return;
+    setWeightError(null);
+
+    let finalPrice = 0;
+    let finalName = weightItemName.trim() || editingWeightOrder.item_name;
+
+    if (weightMode === 'total') {
+      const p = parseFloat(weightPriceInput);
+      if (isNaN(p) || p < 0) {
+        setWeightError('Veuillez entrer un montant valide');
+        return;
+      }
+      finalPrice = Math.round(p * 100) / 100;
+    } else {
+      const grams = parseFloat(weightGramsInput);
+      const rate = parseFloat(weightRatePer100g);
+      if (isNaN(grams) || grams <= 0 || isNaN(rate) || rate <= 0) {
+        setWeightError('Veuillez indiquer le grammage et le prix aux 100g');
+        return;
+      }
+      finalPrice = Math.round(((grams * rate) / 100) * 100) / 100;
+
+      // Update name cleanly with the gram count e.g. "Fromage (250g)"
+      const baseName = finalName.replace(/\s*\(\d+(?:\.\d+)?g\)/gi, '').trim();
+      finalName = `${baseName} (${grams}g)`;
+    }
+
+    const orderToUpdate = editingWeightOrder;
+    const prevOrders = orders;
+
+    // ⚡ 0ms INSTANT OPTIMISTIC UI: update local orders immediately
+    setOrders?.((prev) =>
+      prev.map((o) =>
+        o.id === orderToUpdate.id
+          ? { ...o, unit_price: finalPrice, item_name: finalName }
+          : o
+      )
+    );
+
+    // Close modal immediately
+    setEditingWeightOrder(null);
+
+    // Save to database in background
+    startTransition(async () => {
+      try {
+        const res = await updateOrder(orderToUpdate.id, sessionId, {
+          unit_price: finalPrice,
+          item_name: finalName,
+        });
+        if (!res.success) {
+          setOrders?.(prevOrders);
+          alert(res.error || 'Erreur lors de la mise à jour du prix');
+        }
+      } catch (err: any) {
+        setOrders?.(prevOrders);
+        alert(err?.message || 'Erreur lors de la mise à jour du prix');
+      }
+    });
   };
 
   // Toggle a friend on a shared / food order
@@ -493,6 +591,8 @@ export default function OrdersTab({
             const totalOrderPrice = order.quantity * order.unit_price;
             const unassigned = getUnassignedQuantity(order, assignments);
             const isShared = order.split_type === 'shared';
+            const isCheese = /fromage|cheese/i.test(order.item_name);
+            const isPendingWeight = Number(order.unit_price) === 0;
             const sharersCount = orderAssignments.length;
             const perSharerPrice = sharersCount > 0 ? totalOrderPrice / sharersCount : totalOrderPrice;
 
@@ -505,7 +605,7 @@ export default function OrdersTab({
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-slate-700/60 flex items-center justify-center text-xl shrink-0">
-                      {isShared ? '🍕' : '🍺'}
+                      {isCheese ? '🧀' : isShared ? '🍕' : '🍺'}
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
@@ -517,8 +617,8 @@ export default function OrdersTab({
                         </span>
                       </div>
                       <div className="flex items-center gap-2 text-xs text-slate-400 mt-0.5">
-                        <span className="text-emerald-400 font-semibold">
-                          ${Number(order.unit_price).toFixed(2)} ea
+                        <span className={isPendingWeight ? 'text-amber-400 font-bold' : 'text-emerald-400 font-semibold'}>
+                          {isPendingWeight ? 'À peser ($0)' : `$${Number(order.unit_price).toFixed(2)} ea`}
                         </span>
                         <span>•</span>
                         <span
@@ -534,22 +634,52 @@ export default function OrdersTab({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <span className="text-base font-black text-white">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-base font-black text-white mr-1">
                       ${totalOrderPrice.toFixed(2)}
                     </span>
+                    {!isClosed && (
+                      <button
+                        type="button"
+                        onClick={() => handleOpenWeightModal(order)}
+                        className="px-2.5 py-1.5 rounded-xl bg-slate-700/80 hover:bg-slate-700 active:bg-slate-600 text-slate-200 text-xs font-semibold flex items-center gap-1 border border-slate-600/60 transition active:scale-95 touch-manipulation min-h-[36px]"
+                        title="Ajuster le montant ou le grammage selon l'addition"
+                      >
+                        <span>⚖️</span>
+                        <span className="hidden sm:inline">Ajuster</span>
+                      </button>
+                    )}
                     {!isClosed && (
                       <button
                         onClick={() => handleDeleteOrder(order.id, order.item_name)}
                         disabled={isPending}
                         aria-label="Delete order"
-                        className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-rose-400 transition-colors"
+                        className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-rose-400 hover:bg-slate-700/50 transition-colors"
                       >
                         ✕
                       </button>
                     )}
                   </div>
                 </div>
+
+                {/* Banner when weight/price is pending from the bill */}
+                {isPendingWeight && (
+                  <div className="mt-3 p-2.5 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-between gap-2 text-xs text-amber-300">
+                    <span className="flex items-center gap-1.5 font-medium">
+                      <span>⚖️</span>
+                      <span>Prix au grammage en attente de l'addition</span>
+                    </span>
+                    {!isClosed && (
+                      <button
+                        type="button"
+                        onClick={() => handleOpenWeightModal(order)}
+                        className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold text-xs transition shrink-0 active:scale-95 shadow"
+                      >
+                        Renseigner prix
+                      </button>
+                    )}
+                  </div>
+                )}
 
                 {/* Assignment section */}
                 <div className="mt-3.5 pt-3 border-t border-slate-700/60">
@@ -930,6 +1060,35 @@ export default function OrdersTab({
                     </span>
                   </div>
 
+                  {/* Quick presets for common off-menu items like cheese */}
+                  <div className="flex flex-wrap items-center gap-1.5 pb-1">
+                    <span className="text-[10px] text-slate-400 font-semibold">Rapide:</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCustomName('Fromage');
+                        setCustomPrice('0');
+                        setCustomCategory('food');
+                        setCustomSplitType('shared');
+                      }}
+                      className="px-2 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-[11px] font-bold border border-amber-500/30 transition-all flex items-center gap-1 active:scale-95 touch-manipulation"
+                    >
+                      🧀 Fromage (au grammage)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCustomName('Planche Fromage & Charcuterie');
+                        setCustomPrice('0');
+                        setCustomCategory('food');
+                        setCustomSplitType('shared');
+                      }}
+                      className="px-2 py-1 rounded-lg bg-slate-700/60 hover:bg-slate-700 text-slate-300 text-[11px] font-medium border border-slate-600/50 transition-all flex items-center gap-1 active:scale-95 touch-manipulation"
+                    >
+                      🥩 Planche Mixte
+                    </button>
+                  </div>
+
                   <div className="grid grid-cols-3 gap-2">
                     <div className="col-span-2">
                       <label className="block text-[11px] font-semibold text-slate-400 mb-1">
@@ -939,7 +1098,7 @@ export default function OrdersTab({
                         type="text"
                         value={customName}
                         onChange={(e) => setCustomName(e.target.value)}
-                        placeholder="e.g. Special Cocktail, Hookah"
+                        placeholder="e.g. Fromage, Special Cocktail"
                         required
                         className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs placeholder-slate-500 focus:outline-none focus:border-blue-500 min-h-[40px]"
                       />
@@ -954,12 +1113,14 @@ export default function OrdersTab({
                         min="0"
                         value={customPrice}
                         onChange={(e) => setCustomPrice(e.target.value)}
-                        placeholder="10.00"
-                        required
+                        placeholder="0.00"
                         className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs placeholder-slate-500 focus:outline-none focus:border-blue-500 min-h-[40px]"
                       />
                     </div>
                   </div>
+                  <p className="text-[10px] text-slate-400">
+                    💡 Pour le fromage ou les articles au poids, laissez $0 : vous ajusterez le montant exact dès réception de l'addition !
+                  </p>
 
                   <div className="grid grid-cols-2 gap-2">
                     <div>
@@ -1303,6 +1464,247 @@ export default function OrdersTab({
                 className="w-full py-3.5 px-4 rounded-2xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-bold text-sm shadow-lg shadow-blue-600/30 active:scale-98 transition-all min-h-[48px] touch-manipulation"
               >
                 Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* WEIGHT / BILL PRICE ADJUSTMENT MODAL */}
+      {editingWeightOrder && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setEditingWeightOrder(null);
+          }}
+        >
+          <div
+            className="w-full max-w-md bg-slate-900 border-t sm:border border-slate-700/80 rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl animate-slide-up max-h-[88dvh] overflow-y-auto overscroll-contain pb-[max(6rem,env(safe-area-inset-bottom))] sm:pb-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Grab handle for mobile */}
+            <div className="w-12 h-1.5 bg-slate-600 rounded-full mx-auto mb-4 sm:hidden shrink-0" />
+
+            <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-800">
+              <div>
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <span>⚖️</span> Ajuster Prix / Poids
+                </h3>
+                <p className="text-xs text-slate-400">
+                  {editingWeightOrder.item_name} (×{editingWeightOrder.quantity})
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingWeightOrder(null)}
+                aria-label="Fermer"
+                className="w-10 h-10 rounded-full bg-slate-800 active:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white active:scale-95 transition-all touch-manipulation"
+              >
+                ✕
+              </button>
+            </div>
+
+            {weightError && (
+              <div className="mb-3.5 p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs font-semibold">
+                {weightError}
+              </div>
+            )}
+
+            {/* Mode selection tabs */}
+            <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-800/80 rounded-2xl mb-4 border border-slate-700/60">
+              <button
+                type="button"
+                onClick={() => setWeightMode('total')}
+                className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 touch-manipulation min-h-[40px] ${
+                  weightMode === 'total'
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <span>💵</span>
+                <span>Montant Addition</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setWeightMode('grammage')}
+                className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 touch-manipulation min-h-[40px] ${
+                  weightMode === 'grammage'
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <span>🧀</span>
+                <span>Poids (g) × Tarif</span>
+              </button>
+            </div>
+
+            {/* Mode A: Direct Total from Bill */}
+            {weightMode === 'total' && (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    Montant affiché sur l'addition reçue ($)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">
+                      $
+                    </span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      inputMode="decimal"
+                      value={weightPriceInput}
+                      onChange={(e) => setWeightPriceInput(e.target.value)}
+                      placeholder="ex: 14.50"
+                      autoFocus
+                      className="w-full pl-8 pr-4 py-3 rounded-2xl bg-slate-800/90 border border-slate-700 text-white text-base font-bold placeholder-slate-500 focus:outline-none focus:border-blue-500 min-h-[48px] touch-manipulation"
+                    />
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Indiquez le total facturé par le restaurant pour cet article.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Mode B: Grammage x Rate per 100g */}
+            {weightMode === 'grammage' && (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    Poids pesé (en grammes)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      step="1"
+                      min="1"
+                      inputMode="numeric"
+                      value={weightGramsInput}
+                      onChange={(e) => setWeightGramsInput(e.target.value)}
+                      placeholder="ex: 280"
+                      className="w-full px-4 py-3 rounded-2xl bg-slate-800/90 border border-slate-700 text-white text-base font-bold placeholder-slate-500 focus:outline-none focus:border-blue-500 min-h-[48px] touch-manipulation"
+                    />
+                    <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">
+                      grammes
+                    </span>
+                  </div>
+
+                  {/* Quick gram presets */}
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {[150, 200, 250, 300, 350, 400, 500].map((g) => (
+                      <button
+                        key={g}
+                        type="button"
+                        onClick={() => setWeightGramsInput(String(g))}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition active:scale-95 touch-manipulation ${
+                          weightGramsInput === String(g)
+                            ? 'bg-amber-500/25 border-amber-500/60 text-amber-300'
+                            : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        {g}g
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    Tarif aux 100 grammes ($)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">
+                      $
+                    </span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0.1"
+                      inputMode="decimal"
+                      value={weightRatePer100g}
+                      onChange={(e) => setWeightRatePer100g(e.target.value)}
+                      placeholder="ex: 4.50"
+                      className="w-full pl-8 pr-16 py-3 rounded-2xl bg-slate-800/90 border border-slate-700 text-white text-base font-bold placeholder-slate-500 focus:outline-none focus:border-blue-500 min-h-[48px] touch-manipulation"
+                    />
+                    <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">
+                      / 100g
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Optional name refinement */}
+            <div className="mt-4 pt-3 border-t border-slate-800">
+              <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                Libellé sur la facture (optionnel)
+              </label>
+              <input
+                type="text"
+                value={weightItemName}
+                onChange={(e) => setWeightItemName(e.target.value)}
+                placeholder="ex: Fromage de Chèvre (280g)"
+                className="w-full px-3 py-2 rounded-xl bg-slate-800/80 border border-slate-700 text-white text-xs placeholder-slate-500 focus:outline-none focus:border-blue-500 min-h-[38px]"
+              />
+            </div>
+
+            {/* Live Calculation & Split Preview */}
+            {(() => {
+              let calculatedTotal = 0;
+              if (weightMode === 'total') {
+                calculatedTotal = parseFloat(weightPriceInput) || 0;
+              } else {
+                const g = parseFloat(weightGramsInput) || 0;
+                const r = parseFloat(weightRatePer100g) || 0;
+                calculatedTotal = Math.round(((g * r) / 100) * 100) / 100;
+              }
+
+              const orderSharers = assignments.filter((a) => a.order_id === editingWeightOrder.id);
+              const sharersCount = orderSharers.length;
+              const perSharer = sharersCount > 0 ? calculatedTotal / sharersCount : calculatedTotal;
+
+              return (
+                <div className="mt-4 p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700/80 space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-slate-400 font-medium">Nouveau total calculé :</span>
+                    <span className="text-base font-black text-emerald-400">
+                      ${calculatedTotal.toFixed(2)}
+                    </span>
+                  </div>
+                  {editingWeightOrder.split_type === 'shared' && (
+                    <div className="flex items-center justify-between text-xs pt-1.5 border-t border-slate-700/60">
+                      <span className="text-slate-400 font-medium">
+                        Partage ({sharersCount} {sharersCount > 1 ? 'amis' : 'ami'}) :
+                      </span>
+                      <span className="font-bold text-blue-400">
+                        ${perSharer.toFixed(2)} / personne
+                      </span>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* Action buttons */}
+            <div className="grid grid-cols-2 gap-3 pt-4 mt-2">
+              <button
+                type="button"
+                onClick={() => setEditingWeightOrder(null)}
+                className="py-3 px-4 rounded-2xl bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-300 font-bold text-xs min-h-[48px] touch-manipulation transition-all active:scale-95"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveWeightOrder}
+                disabled={isPending}
+                className="py-3 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-bold text-xs shadow-lg shadow-emerald-600/30 min-h-[48px] touch-manipulation transition-all active:scale-95 flex items-center justify-center gap-1.5"
+              >
+                <span>✅ Valider</span>
               </button>
             </div>
           </div>

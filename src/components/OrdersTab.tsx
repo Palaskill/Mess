@@ -13,6 +13,7 @@ import {
   X,
   AlertTriangle,
   CheckCircle2,
+  Camera,
 } from 'lucide-react';
 import {
   Order,
@@ -20,6 +21,7 @@ import {
   Assignment,
   MenuItem,
 } from '@/types';
+import ReceiptScannerModal from '@/components/ReceiptScannerModal';
 import {
   createBatchOrders,
   CreateBatchOrderItem,
@@ -88,6 +90,7 @@ export default function OrdersTab({
 
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
 
   // Active menu items
   const activeMenu = menuItems.filter((i) => i.is_active);
@@ -546,6 +549,40 @@ export default function OrdersTab({
     });
   };
 
+  // Import orders detected by Gemini Vision scanner
+  const handleImportScannedOrders = (scannedItems: CreateBatchOrderItem[]) => {
+    if (scannedItems.length === 0) return;
+
+    // ⚡ 0ms INSTANT OPTIMISTIC UI: display all scanned orders immediately!
+    const timestamp = Date.now();
+    const optimisticOrders: Order[] = scannedItems.map((item, idx) => ({
+      id: `temp-scan-${timestamp}-${idx}`,
+      session_id: sessionId,
+      menu_item_id: null,
+      item_name: item.item_name,
+      quantity: item.quantity,
+      unit_price: item.unit_price,
+      split_type: item.split_type || 'individual',
+      created_at: new Date(timestamp - idx * 1000).toISOString(),
+    }));
+
+    setOrders?.((prev) => [...optimisticOrders, ...prev]);
+
+    // Persist in database in background
+    startTransition(async () => {
+      try {
+        const res = await createBatchOrders(sessionId, scannedItems);
+        if (!res.success) {
+          setOrders?.((prev) => prev.filter((o) => !o.id.startsWith(`temp-scan-${timestamp}`)));
+          alert(res.error || "Erreur lors de l'importation de l'addition scannée");
+        }
+      } catch (err: any) {
+        setOrders?.((prev) => prev.filter((o) => !o.id.startsWith(`temp-scan-${timestamp}`)));
+        alert(err?.message || "Erreur lors de l'importation de l'addition scannée");
+      }
+    });
+  };
+
   // Toggle a friend on a shared / food order
   const handleToggleSharer = async (order: Order, participant: Participant) => {
     if (isClosed) return;
@@ -664,18 +701,30 @@ export default function OrdersTab({
         </div>
 
         {!isClosed && (
-          <button
-            onClick={() => {
-              setError(null);
-              setRoundItems([]);
-              setActiveCategory('all');
-              setIsAddOpen(true);
-            }}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white text-xs sm:text-sm font-bold shadow-lg shadow-blue-600/30 active:scale-95 transition-all min-h-[44px] touch-manipulation cursor-pointer"
-          >
-            <Plus className="w-4 h-4 shrink-0" />
-            <span>New Order</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsScannerOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-2.5 rounded-2xl bg-gradient-to-r from-blue-600/20 to-indigo-600/20 hover:from-blue-600/30 hover:to-indigo-600/30 border border-blue-500/40 text-blue-300 hover:text-white text-xs sm:text-sm font-bold shadow-sm active:scale-95 transition-all min-h-[44px] touch-manipulation cursor-pointer"
+              title="Scanner une photo de l'addition par IA Gemini Vision"
+            >
+              <Camera className="w-4 h-4 text-blue-400 shrink-0" />
+              <span>Scanner</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setError(null);
+                setRoundItems([]);
+                setActiveCategory('all');
+                setIsAddOpen(true);
+              }}
+              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white text-xs sm:text-sm font-bold shadow-lg shadow-blue-600/30 active:scale-95 transition-all min-h-[44px] touch-manipulation cursor-pointer"
+            >
+              <Plus className="w-4 h-4 shrink-0" />
+              <span>New Order</span>
+            </button>
+          </div>
         )}
       </div>
 
@@ -686,22 +735,33 @@ export default function OrdersTab({
             🍻
           </div>
           <h3 className="text-base font-bold text-white mb-1">No orders yet</h3>
-          <p className="text-xs text-slate-400 mb-4 max-w-xs mx-auto">
-            Order drinks or food from the menu. Food can be assigned to 1 person or split among many!
+          <p className="text-xs text-slate-400 mb-5 max-w-xs mx-auto">
+            Scannez le ticket de caisse en photo pour tout importer par IA, ou passez votre commande manuellement !
           </p>
           {!isClosed && (
-            <button
-              onClick={() => {
-                setError(null);
-                setRoundItems([]);
-                setActiveCategory('all');
-                setIsAddOpen(true);
-              }}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-600/20 active:scale-95 transition-all cursor-pointer min-h-[40px]"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Place First Order</span>
-            </button>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5">
+              <button
+                type="button"
+                onClick={() => setIsScannerOpen(true)}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 active:bg-blue-700 text-white text-xs sm:text-sm font-bold shadow-lg shadow-blue-600/30 active:scale-95 transition-all cursor-pointer min-h-[44px]"
+              >
+                <Camera className="w-4 h-4" />
+                <span>Scanner l&apos;Addition (IA Gemini)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setError(null);
+                  setRoundItems([]);
+                  setActiveCategory('all');
+                  setIsAddOpen(true);
+                }}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700/80 active:scale-95 transition-all cursor-pointer min-h-[44px]"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Commande Manuelle</span>
+              </button>
+            </div>
           )}
         </div>
       ) : (
@@ -1983,6 +2043,13 @@ export default function OrdersTab({
           </div>
         </div>
       )}
+
+      {/* 📸 AI Gemini Vision Receipt Scanner Bottom Sheet Modal */}
+      <ReceiptScannerModal
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        onImportOrders={handleImportScannedOrders}
+      />
     </div>
   );
 }

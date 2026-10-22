@@ -553,7 +553,7 @@ export default function OrdersTab({
   const handleImportScannedOrders = (scannedItems: CreateBatchOrderItem[]) => {
     if (scannedItems.length === 0) return;
 
-    // ⚡ 0ms INSTANT OPTIMISTIC UI: display all scanned orders immediately!
+    // ⚡ 0ms INSTANT OPTIMISTIC UI: display all scanned orders & assignments immediately!
     const timestamp = Date.now();
     const optimisticOrders: Order[] = scannedItems.map((item, idx) => ({
       id: `temp-scan-${timestamp}-${idx}`,
@@ -566,7 +566,49 @@ export default function OrdersTab({
       created_at: new Date(timestamp - idx * 1000).toISOString(),
     }));
 
+    const optimisticAssignments: (Assignment & { participant: Participant })[] = [];
+    optimisticOrders.forEach((newOrder, idx) => {
+      const item = scannedItems[idx];
+      const pIds = item.assigned_participant_ids || [];
+      if (pIds.length > 0) {
+        if (item.split_type === 'shared') {
+          pIds.forEach((pId, aIdx) => {
+            const p = participants.find((part) => part.id === pId);
+            if (p) {
+              optimisticAssignments.push({
+                id: `temp-scan-assign-${timestamp}-${idx}-${aIdx}`,
+                order_id: newOrder.id,
+                participant_id: p.id,
+                quantity: 1,
+                participant: p,
+              });
+            }
+          });
+        } else {
+          const counts: Record<string, number> = {};
+          pIds.forEach((pId) => {
+            counts[pId] = (counts[pId] || 0) + 1;
+          });
+          Object.entries(counts).forEach(([pId, count], aIdx) => {
+            const p = participants.find((part) => part.id === pId);
+            if (p) {
+              optimisticAssignments.push({
+                id: `temp-scan-assign-${timestamp}-${idx}-${aIdx}`,
+                order_id: newOrder.id,
+                participant_id: p.id,
+                quantity: Math.min(count, item.quantity),
+                participant: p,
+              });
+            }
+          });
+        }
+      }
+    });
+
     setOrders?.((prev) => [...optimisticOrders, ...prev]);
+    if (optimisticAssignments.length > 0) {
+      setAssignments?.((prev) => [...prev, ...optimisticAssignments]);
+    }
 
     // Persist in database in background
     startTransition(async () => {
@@ -574,10 +616,12 @@ export default function OrdersTab({
         const res = await createBatchOrders(sessionId, scannedItems);
         if (!res.success) {
           setOrders?.((prev) => prev.filter((o) => !o.id.startsWith(`temp-scan-${timestamp}`)));
+          setAssignments?.((prev) => prev.filter((a) => !a.id.startsWith(`temp-scan-assign-${timestamp}`)));
           alert(res.error || "Erreur lors de l'importation de l'addition scannée");
         }
       } catch (err: any) {
         setOrders?.((prev) => prev.filter((o) => !o.id.startsWith(`temp-scan-${timestamp}`)));
+        setAssignments?.((prev) => prev.filter((a) => !a.id.startsWith(`temp-scan-assign-${timestamp}`)));
         alert(err?.message || "Erreur lors de l'importation de l'addition scannée");
       }
     });
@@ -2049,6 +2093,7 @@ export default function OrdersTab({
         isOpen={isScannerOpen}
         onClose={() => setIsScannerOpen(false)}
         onImportOrders={handleImportScannedOrders}
+        participants={participants}
       />
     </div>
   );

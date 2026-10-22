@@ -7,6 +7,7 @@ export interface ParsedReceiptItem {
   unit_price: number;
   category: 'drinks' | 'food' | 'other';
   split_type: 'individual' | 'shared';
+  assigned_participant_ids?: string[];
 }
 
 export interface ParsedReceiptResult {

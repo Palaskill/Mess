@@ -1,6 +1,16 @@
 'use client';
 
 import { useState, useTransition, useMemo } from 'react';
+import {
+  Share2,
+  Check,
+  Wallet,
+  Coins,
+  Lock,
+  Scale,
+  AlertCircle,
+  Copy,
+} from 'lucide-react';
 import { Order, Participant, Assignment } from '@/types';
 import {
   calculateBills,
@@ -177,7 +187,8 @@ export default function BillTab({
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-base font-bold text-white flex items-center gap-2">
-            <span>💰</span> Who Pays What
+            <Wallet className="w-4 h-4 text-emerald-400" />
+            <span>Who Pays What</span>
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
             Real-time split based on individual & shared items
@@ -186,16 +197,26 @@ export default function BillTab({
 
         <button
           onClick={handleShareTab}
-          className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white text-xs font-bold shadow-lg shadow-blue-600/30 active:scale-95 transition-all min-h-[44px] touch-manipulation"
+          className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white text-xs font-bold shadow-lg shadow-blue-600/30 active:scale-95 transition-all min-h-[44px] touch-manipulation cursor-pointer"
         >
-          <span>{copied ? '✓ Copied!' : '📤 Share Tab'}</span>
+          {copied ? (
+            <>
+              <Check className="w-4 h-4 text-emerald-300" />
+              <span>Copied!</span>
+            </>
+          ) : (
+            <>
+              <Share2 className="w-4 h-4" />
+              <span>Share Tab</span>
+            </>
+          )}
         </button>
       </div>
 
       {/* Unassigned items warning alert */}
       {unassignedAmount > 0 && (
         <div className="p-3.5 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-start gap-3">
-          <span className="text-xl shrink-0">⚠️</span>
+          <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
           <div>
             <h4 className="text-sm font-bold text-amber-300">
               ${unassignedAmount.toFixed(2)} in unassigned items!
@@ -210,7 +231,7 @@ export default function BillTab({
       {/* Pending weight/cheese items alert */}
       {pendingWeightOrders.length > 0 && (
         <div className="p-3.5 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-start gap-3">
-          <span className="text-xl shrink-0">🧀</span>
+          <Scale className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
           <div>
             <h4 className="text-sm font-bold text-amber-300">
               {pendingWeightOrders.length} article(s) au grammage sans prix défini ($0)
@@ -224,16 +245,16 @@ export default function BillTab({
 
       {/* ==================== TIP SECTION ==================== */}
       {participants.length > 0 && (
-        <div className="rounded-2xl border border-slate-700/80 bg-slate-800/60 overflow-hidden">
+        <div className="rounded-2xl border border-slate-700/80 bg-slate-800/60 overflow-hidden shadow-md">
           {/* Tip Toggle Header */}
           <button
             type="button"
             onClick={() => (showTipSection ? setShowTipSection(false) : handleOpenTip())}
-            className="w-full flex items-center justify-between p-4 text-left hover:bg-slate-800/80 transition-colors active:bg-slate-800"
+            className="w-full flex items-center justify-between p-4 text-left hover:bg-slate-800/80 transition-colors active:bg-slate-800 cursor-pointer"
           >
             <div className="flex items-center gap-2.5">
               <div className="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center text-lg">
-                💵
+                <Coins className="w-4 h-4 text-emerald-400" />
               </div>
               <div>
                 <span className="font-bold text-sm text-white block leading-tight">
@@ -527,13 +548,15 @@ export default function BillTab({
             <button
               onClick={handleCloseSession}
               disabled={isPending}
-              className="px-4 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-bold transition-all active:scale-95 border border-slate-600 min-h-[42px]"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-slate-700 hover:bg-slate-600 active:bg-slate-650 text-slate-200 text-xs font-bold transition-all active:scale-95 border border-slate-600/70 min-h-[42px] cursor-pointer"
             >
-              {isPending ? 'Closing...' : 'Close Tab 🔒'}
+              <Lock className="w-3.5 h-3.5 text-slate-400" />
+              <span>{isPending ? 'Closing...' : 'Close Tab'}</span>
             </button>
           ) : (
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-800 text-rose-400 border border-rose-500/30 text-xs font-bold">
-              🔒 Closed
+              <Lock className="w-3.5 h-3.5 text-rose-400" />
+              <span>Closed</span>
             </span>
           )}
         </div>

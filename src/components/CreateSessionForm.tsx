@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { Sparkles, Plus, X, Beer } from 'lucide-react';
 import { createSession } from '@/lib/actions';
 
 interface CreateSessionFormProps {
@@ -120,9 +121,9 @@ export default function CreateSessionForm({
           type="button"
           onClick={handleOpen}
           aria-label="Create new session"
-          className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-4 sm:right-6 z-40 flex items-center gap-2.5 px-5 py-3.5 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 active:scale-95 text-white font-bold shadow-xl shadow-blue-900/40 border border-blue-400/30 transition-all duration-200 touch-manipulation min-h-[50px]"
+          className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-4 sm:right-6 z-40 flex items-center gap-2 px-5 py-3.5 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 active:scale-95 text-white font-bold shadow-xl shadow-blue-900/40 border border-blue-400/30 transition-all duration-200 touch-manipulation min-h-[50px] cursor-pointer"
         >
-          <span className="text-xl leading-none select-none">✨</span>
+          <Sparkles className="w-5 h-5 text-amber-300 animate-spin-slow shrink-0" />
           <span className="text-sm tracking-wide">New Session</span>
         </button>
       ) : null}
@@ -147,8 +148,8 @@ export default function CreateSessionForm({
 
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-xl">
-                  🍺
+                <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+                  <Beer className="w-5 h-5" />
                 </div>
                 <div>
                   <h2
@@ -168,16 +169,9 @@ export default function CreateSessionForm({
                 onClick={handleClose}
                 disabled={isPending}
                 aria-label="Close dialog"
-                className="w-11 h-11 -mr-2 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 active:bg-slate-700 active:scale-95 transition-all touch-manipulation"
+                className="w-11 h-11 -mr-2 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 active:bg-slate-700 active:scale-95 transition-all touch-manipulation cursor-pointer"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                  className="w-5 h-5"
-                >
-                  <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
-                </svg>
+                <X className="w-5 h-5" />
               </button>
             </div>
 

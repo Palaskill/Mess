@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Sun, Moon, Smartphone } from 'lucide-react';
 
 type ThemeMode = 'light' | 'dark' | 'auto';
 
@@ -57,7 +58,7 @@ export default function ThemeToggle({
   // Prevent hydration mismatch
   if (!mounted) {
     return (
-      <div className={`h-8 w-24 bg-slate-800/40 rounded-xl animate-pulse ${className}`} />
+      <div className={`h-9 w-24 bg-slate-800/40 rounded-2xl animate-pulse ${className}`} />
     );
   }
 
@@ -68,7 +69,6 @@ export default function ThemeToggle({
       handleSelectTheme(next);
     };
 
-    const icon = theme === 'dark' ? '🌙' : theme === 'light' ? '☀️' : '📱';
     const label = theme === 'dark' ? 'Dark' : theme === 'light' ? 'Light' : 'Auto';
 
     return (
@@ -76,15 +76,17 @@ export default function ThemeToggle({
         type="button"
         onClick={cycleNext}
         title={`Current theme: ${label}. Tap to change.`}
-        className={`flex items-center gap-1.5 px-3 py-2 rounded-2xl border border-slate-700/60 bg-slate-800/80 hover:bg-slate-700 active:bg-slate-650 text-xs font-bold text-slate-200 transition-all active:scale-95 min-h-[40px] touch-manipulation shadow-sm ${className}`}
+        className={`flex items-center gap-1.5 px-3 py-2 rounded-2xl border border-slate-700/60 bg-slate-800/80 hover:bg-slate-700 active:bg-slate-650 text-xs font-semibold text-slate-200 transition-all active:scale-95 min-h-[40px] touch-manipulation shadow-sm ${className}`}
       >
-        <span className="text-sm leading-none">{icon}</span>
+        {theme === 'dark' && <Moon className="w-3.5 h-3.5 text-blue-400 shrink-0" />}
+        {theme === 'light' && <Sun className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
+        {theme === 'auto' && <Smartphone className="w-3.5 h-3.5 text-emerald-400 shrink-0" />}
         <span className="text-xs capitalize">{label}</span>
       </button>
     );
   }
 
-  // Segmented 3-option toggle
+  // Segmented 3-option toggle with vector icons
   return (
     <div
       role="radiogroup"
@@ -103,7 +105,7 @@ export default function ThemeToggle({
             : 'text-slate-400 hover:text-slate-200'
         }`}
       >
-        <span className="text-xs">☀️</span>
+        <Sun className="w-3.5 h-3.5" />
         <span className="hidden sm:inline text-[11px]">Light</span>
       </button>
 
@@ -119,7 +121,7 @@ export default function ThemeToggle({
             : 'text-slate-400 hover:text-slate-200'
         }`}
       >
-        <span className="text-xs">🌙</span>
+        <Moon className="w-3.5 h-3.5" />
         <span className="hidden sm:inline text-[11px]">Dark</span>
       </button>
 
@@ -135,7 +137,7 @@ export default function ThemeToggle({
             : 'text-slate-400 hover:text-slate-200'
         }`}
       >
-        <span className="text-xs">⚙️</span>
+        <Smartphone className="w-3.5 h-3.5" />
         <span className="hidden sm:inline text-[11px]">Auto</span>
       </button>
     </div>

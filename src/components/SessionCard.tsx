@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { Users, Trash2, ArrowRight } from 'lucide-react';
 import { Session } from '@/types';
 import { deleteSession } from '@/lib/actions';
 import { timeAgo } from '@/lib/utils';
@@ -131,20 +131,9 @@ export default function SessionCard({ session }: SessionCardProps) {
               type="button"
               onClick={handleDeleteClick}
               aria-label={`Delete ${session.name}`}
-              className="w-11 h-11 -mr-2 -mt-2 flex items-center justify-center text-slate-400 hover:text-rose-400 active:text-rose-500 rounded-xl transition-colors hover:bg-slate-700/50"
+              className="w-11 h-11 -mr-2 -mt-2 flex items-center justify-center text-slate-400 hover:text-rose-400 active:text-rose-500 rounded-xl transition-colors hover:bg-rose-500/10 cursor-pointer"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                className="w-4 h-4"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 1 .75.74l.5 6.5a.75.75 0 1 1-1.498.11l-.5-6.5a.75.75 0 0 1 .748-.85Zm3.58.74a.75.75 0 0 0-1.498-.11l-.5 6.5a.75.75 0 1 0 1.498.12l.5-6.5a.75.75 0 0 0-.74-.86a.75.75 0 0 0 .74.35Z"
-                  clipRule="evenodd"
-                />
-              </svg>
+              <Trash2 className="w-4 h-4" />
             </button>
           )}
         </div>
@@ -155,14 +144,7 @@ export default function SessionCard({ session }: SessionCardProps) {
         <div className="flex items-center gap-3">
           {session.participant_count !== undefined ? (
             <span className="flex items-center gap-1.5 font-medium text-slate-300">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                className="w-4 h-4 text-blue-400"
-              >
-                <path d="M7 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM14.5 9a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM1.615 16.428a1.224 1.224 0 0 1-.569-1.175 6.002 6.002 0 0 1 11.908 0c.058.467-.172.92-.57 1.174A9.953 9.953 0 0 1 7 17a9.953 9.953 0 0 1-5.385-.572ZM14.5 16h-.106c.07-.297.088-.611.048-.933a7.47 7.47 0 0 0-1.588-3.755 4.502 4.502 0 0 1 5.874 4.163c0 .287-.13.56-.352.736A7.962 7.962 0 0 1 14.5 16Z" />
-              </svg>
+              <Users className="w-4 h-4 text-blue-400 shrink-0" />
               {session.participant_count}{' '}
               {session.participant_count === 1 ? 'person' : 'people'}
             </span>
@@ -172,19 +154,8 @@ export default function SessionCard({ session }: SessionCardProps) {
         </div>
 
         <span className="flex items-center gap-1 font-semibold text-blue-400 group-hover:translate-x-0.5 transition-transform">
-          Open
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-            className="w-4 h-4"
-          >
-            <path
-              fillRule="evenodd"
-              d="M3 10a.75.75 0 0 1 .75-.75h10.638L10.23 5.29a.75.75 0 1 1 1.04-1.08l5.5 5.25a.75.75 0 0 1 0 1.08l-5.5 5.25a.75.75 0 1 1-1.04-1.08l4.158-3.96H3.75A.75.75 0 0 1 3 10Z"
-              clipRule="evenodd"
-            />
-          </svg>
+          <span>Open</span>
+          <ArrowRight className="w-3.5 h-3.5" />
         </span>
       </div>
     </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { UserPlus, Users, Trash2, X } from 'lucide-react';
 import { Participant, PARTICIPANT_COLORS, Assignment } from '@/types';
 import { addParticipant, removeParticipant } from '@/lib/actions';
 
@@ -100,7 +101,8 @@ export default function FriendsTab({
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-base font-bold text-white flex items-center gap-2">
-            <span>👥</span> Friends at the Table
+            <Users className="w-4 h-4 text-blue-400" />
+            <span>Friends at the Table</span>
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
             {participants.length} {participants.length === 1 ? 'person' : 'people'} joined
@@ -113,18 +115,20 @@ export default function FriendsTab({
               setError(null);
               setIsAddOpen(true);
             }}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold shadow-lg shadow-blue-600/30 active:scale-95 transition-all min-h-[44px]"
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white text-xs sm:text-sm font-bold shadow-lg shadow-blue-600/30 active:scale-95 transition-all min-h-[44px] touch-manipulation cursor-pointer"
           >
-            <span className="text-lg leading-none">+</span>
-            Add Friend
+            <UserPlus className="w-4 h-4" />
+            <span>Add Friend</span>
           </button>
         )}
       </div>
 
       {/* Friends List */}
       {participants.length === 0 ? (
-        <div className="text-center py-12 px-4 rounded-2xl border border-dashed border-slate-700 bg-slate-800/30">
-          <div className="text-4xl mb-3">👋</div>
+        <div className="text-center py-12 px-4 rounded-3xl border border-dashed border-slate-700 bg-slate-800/30">
+          <div className="w-16 h-16 mx-auto mb-3 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center justify-center text-3xl shadow-inner">
+            👋
+          </div>
           <h3 className="text-base font-bold text-white mb-1">No friends added yet</h3>
           <p className="text-xs text-slate-400 mb-4 max-w-xs mx-auto">
             Add everyone sitting at your table. Friends can also join later and jump into shared food!
@@ -132,9 +136,10 @@ export default function FriendsTab({
           {!isClosed && (
             <button
               onClick={() => setIsAddOpen(true)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-600/20 active:scale-95 transition-all cursor-pointer min-h-[40px]"
             >
-              + Add First Friend
+              <UserPlus className="w-4 h-4" />
+              <span>Add First Friend</span>
             </button>
           )}
         </div>
@@ -143,11 +148,11 @@ export default function FriendsTab({
           {participants.map((p) => (
             <div
               key={p.id}
-              className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-800/90 border border-slate-700/80 shadow-md"
+              className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-800/90 border border-slate-700/80 shadow-md backdrop-blur-sm transition-all"
             >
               <div className="flex items-center gap-3">
                 <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white text-base shadow-inner"
+                  className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white text-base shadow-inner ring-2 ring-white/10"
                   style={{ backgroundColor: p.color }}
                 >
                   {p.name.charAt(0).toUpperCase()}
@@ -169,9 +174,9 @@ export default function FriendsTab({
                   onClick={() => handleRemove(p.id, p.name)}
                   disabled={isPending}
                   aria-label={`Remove ${p.name}`}
-                  className="w-11 h-11 rounded-xl flex items-center justify-center text-slate-400 hover:text-rose-400 active:text-rose-500 hover:bg-rose-500/10 active:bg-rose-500/20 active:scale-90 transition-all touch-manipulation"
+                  className="w-11 h-11 rounded-xl flex items-center justify-center text-slate-400 hover:text-rose-400 active:text-rose-500 hover:bg-rose-500/10 active:bg-rose-500/20 active:scale-90 transition-all touch-manipulation cursor-pointer"
                 >
-                  ✕
+                  <Trash2 className="w-4 h-4" />
                 </button>
               )}
             </div>
@@ -198,15 +203,16 @@ export default function FriendsTab({
 
             <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <span>👤</span> Add Friend
+                <UserPlus className="w-5 h-5 text-blue-400" />
+                <span>Add Friend</span>
               </h3>
               <button
                 type="button"
                 onClick={() => setIsAddOpen(false)}
                 aria-label="Close dialog"
-                className="w-10 h-10 rounded-full bg-slate-800 active:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white active:scale-95 transition-all touch-manipulation"
+                className="w-10 h-10 rounded-full bg-slate-800 active:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white active:scale-95 transition-all touch-manipulation cursor-pointer"
               >
-                ✕
+                <X className="w-4 h-4" />
               </button>
             </div>
 

@@ -1,3 +1,4 @@
+import { Beer, Sparkles } from 'lucide-react';
 import { getSessions } from '@/lib/actions';
 import SessionCard from '@/components/SessionCard';
 import CreateSessionForm from '@/components/CreateSessionForm';
@@ -16,8 +17,8 @@ export default async function HomePage() {
         <header className="mb-6 sm:mb-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400/20 to-blue-500/20 border border-amber-500/30 flex items-center justify-center text-2xl shadow-inner">
-                🍺
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500/20 via-blue-500/20 to-emerald-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-lg shadow-amber-500/10">
+                <Beer className="w-6 h-6 text-amber-400" />
               </div>
               <div>
                 <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-2">

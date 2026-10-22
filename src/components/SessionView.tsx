@@ -3,6 +3,13 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
+  ChevronLeft,
+  Receipt,
+  Users,
+  Wallet,
+  Sparkles,
+} from 'lucide-react';
+import {
   Session,
   Participant,
   Order,
@@ -63,9 +70,9 @@ export default function SessionView({
         <div className="flex items-center justify-between mb-3 pt-1">
           <Link
             href="/"
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-300 hover:text-white bg-slate-800/90 active:bg-slate-700 px-3.5 py-2 rounded-2xl border border-slate-700/70 shadow-sm active:scale-95 transition-all min-h-[40px] touch-manipulation"
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-300 hover:text-white bg-slate-800/90 active:bg-slate-700 px-3.5 py-2 rounded-2xl border border-slate-700/70 shadow-sm active:scale-95 transition-all min-h-[40px] touch-manipulation group"
           >
-            <span className="text-base leading-none">‹</span>
+            <ChevronLeft className="w-4 h-4 text-slate-400 group-hover:text-white group-hover:-translate-x-0.5 transition-transform" />
             <span>Sessions</span>
           </Link>
 
@@ -111,14 +118,14 @@ export default function SessionView({
           <div className="grid grid-cols-3 gap-1.5 p-1.5 rounded-2xl bg-slate-800/90 border border-slate-700/80 shadow-lg shadow-black/20">
             <button
               onClick={() => setActiveTab('orders')}
-              className={`flex flex-col items-center justify-center py-2.5 px-2 rounded-xl text-xs font-bold transition-all min-h-[50px] relative active:scale-98 touch-manipulation ${
+              className={`flex flex-col items-center justify-center py-2 px-2 rounded-xl text-xs font-bold transition-all min-h-[50px] relative active:scale-98 touch-manipulation ${
                 activeTab === 'orders'
-                  ? 'bg-blue-600 text-white shadow-md shadow-blue-900/40'
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-900/40 ring-1 ring-white/15'
                   : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
               }`}
             >
               <div className="flex items-center gap-1.5">
-                <span className="text-sm">📝</span>
+                <Receipt className="w-3.5 h-3.5 shrink-0" />
                 <span>Orders</span>
                 {orders.length > 0 && (
                   <span
@@ -143,14 +150,14 @@ export default function SessionView({
 
             <button
               onClick={() => setActiveTab('friends')}
-              className={`flex flex-col items-center justify-center py-2.5 px-2 rounded-xl text-xs font-bold transition-all min-h-[50px] relative active:scale-98 touch-manipulation ${
+              className={`flex flex-col items-center justify-center py-2 px-2 rounded-xl text-xs font-bold transition-all min-h-[50px] relative active:scale-98 touch-manipulation ${
                 activeTab === 'friends'
-                  ? 'bg-blue-600 text-white shadow-md shadow-blue-900/40'
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-900/40 ring-1 ring-white/15'
                   : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
               }`}
             >
               <div className="flex items-center gap-1.5">
-                <span className="text-sm">👥</span>
+                <Users className="w-3.5 h-3.5 shrink-0" />
                 <span>Friends</span>
                 {participants.length > 0 && (
                   <span
@@ -169,14 +176,14 @@ export default function SessionView({
 
             <button
               onClick={() => setActiveTab('bill')}
-              className={`flex flex-col items-center justify-center py-2.5 px-2 rounded-xl text-xs font-bold transition-all min-h-[50px] relative active:scale-98 touch-manipulation ${
+              className={`flex flex-col items-center justify-center py-2 px-2 rounded-xl text-xs font-bold transition-all min-h-[50px] relative active:scale-98 touch-manipulation ${
                 activeTab === 'bill'
-                  ? 'bg-blue-600 text-white shadow-md shadow-blue-900/40'
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-900/40 ring-1 ring-white/15'
                   : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
               }`}
             >
               <div className="flex items-center gap-1.5">
-                <span className="text-sm">💰</span>
+                <Wallet className="w-3.5 h-3.5 shrink-0" />
                 <span>The Bill</span>
               </div>
               <span className="text-[9px] text-emerald-400 font-extrabold mt-0.5">

@@ -172,6 +172,40 @@ export default function OrdersTab({
     );
   };
 
+  // Adjust quantity assigned to a friend on a round item
+  const handleAdjustRoundItemParticipantQty = (
+    itemId: string,
+    participantId: string,
+    delta: number
+  ) => {
+    setRoundItems((prev) =>
+      prev.map((r) => {
+        if (r.id !== itemId) return r;
+        const currentFriendQty = r.assignedParticipantIds.filter((id) => id === participantId).length;
+        const totalAssigned = r.assignedParticipantIds.length;
+
+        if (delta > 0) {
+          if (totalAssigned >= r.quantity) return r;
+          return {
+            ...r,
+            assignedParticipantIds: [...r.assignedParticipantIds, participantId],
+          };
+        } else if (delta < 0) {
+          if (currentFriendQty <= 0) return r;
+          const idx = r.assignedParticipantIds.indexOf(participantId);
+          if (idx === -1) return r;
+          const next = [...r.assignedParticipantIds];
+          next.splice(idx, 1);
+          return {
+            ...r,
+            assignedParticipantIds: next,
+          };
+        }
+        return r;
+      })
+    );
+  };
+
   // Toggle friend assignment on a round item
   const handleToggleRoundItemParticipant = (
     itemId: string,
@@ -190,11 +224,48 @@ export default function OrdersTab({
               : [...r.assignedParticipantIds, participantId],
           };
         } else {
-          const has = r.assignedParticipantIds.includes(participantId);
-          return {
-            ...r,
-            assignedParticipantIds: has ? [] : [participantId],
-          };
+          // Individual split
+          if (r.quantity === 1) {
+            const has = r.assignedParticipantIds.includes(participantId);
+            return {
+              ...r,
+              assignedParticipantIds: has ? [] : [participantId],
+            };
+          } else {
+            // Multiple units (e.g. 2 beers, 3 drinks)
+            const friendQty = r.assignedParticipantIds.filter((id) => id === participantId).length;
+            const totalAssigned = r.assignedParticipantIds.length;
+
+            if (friendQty > 0) {
+              if (totalAssigned < r.quantity) {
+                return {
+                  ...r,
+                  assignedParticipantIds: [...r.assignedParticipantIds, participantId],
+                };
+              } else {
+                const idx = r.assignedParticipantIds.indexOf(participantId);
+                const next = [...r.assignedParticipantIds];
+                next.splice(idx, 1);
+                return {
+                  ...r,
+                  assignedParticipantIds: next,
+                };
+              }
+            } else {
+              if (totalAssigned < r.quantity) {
+                return {
+                  ...r,
+                  assignedParticipantIds: [...r.assignedParticipantIds, participantId],
+                };
+              } else {
+                const next = [...r.assignedParticipantIds.slice(0, -1), participantId];
+                return {
+                  ...r,
+                  assignedParticipantIds: next,
+                };
+              }
+            }
+          }
         }
       })
     );
@@ -280,18 +351,52 @@ export default function OrdersTab({
     optimisticOrders.forEach((newOrder, idx) => {
       const r = savedRoundItems[idx];
       if (r.assignedParticipantIds && r.assignedParticipantIds.length > 0) {
-        r.assignedParticipantIds.forEach((pId) => {
-          const participant = participants.find((p) => p.id === pId);
-          if (participant) {
-            optimisticAssignments.push({
-              id: `temp-a-${timestamp}-${idx}-${pId}`,
-              order_id: newOrder.id,
-              participant_id: pId,
-              quantity: r.splitType === 'shared' ? 1 : r.quantity,
-              participant,
-            });
+        if (r.splitType === 'shared') {
+          r.assignedParticipantIds.forEach((pId) => {
+            const participant = participants.find((p) => p.id === pId);
+            if (participant) {
+              optimisticAssignments.push({
+                id: `temp-a-${timestamp}-${idx}-${pId}`,
+                order_id: newOrder.id,
+                participant_id: pId,
+                quantity: 1,
+                participant,
+              });
+            }
+          });
+        } else {
+          // Individual split
+          if (r.assignedParticipantIds.length === 1 && r.quantity > 1) {
+            const pId = r.assignedParticipantIds[0];
+            const participant = participants.find((p) => p.id === pId);
+            if (participant) {
+              optimisticAssignments.push({
+                id: `temp-a-${timestamp}-${idx}-${pId}`,
+                order_id: newOrder.id,
+                participant_id: pId,
+                quantity: r.quantity,
+                participant,
+              });
+            }
+          } else {
+            const counts: Record<string, number> = {};
+            for (const pId of r.assignedParticipantIds) {
+              counts[pId] = (counts[pId] || 0) + 1;
+            }
+            for (const [pId, count] of Object.entries(counts)) {
+              const participant = participants.find((p) => p.id === pId);
+              if (participant) {
+                optimisticAssignments.push({
+                  id: `temp-a-${timestamp}-${idx}-${pId}`,
+                  order_id: newOrder.id,
+                  participant_id: pId,
+                  quantity: Math.min(count, r.quantity),
+                  participant,
+                });
+              }
+            }
           }
-        });
+        }
       }
     });
 
@@ -765,45 +870,124 @@ export default function OrdersTab({
                     </div>
                   ) : (
                     /* INDIVIDUAL SPLIT: Assign units to specific friends */
-                    <div>
-                      <div className="flex items-center justify-between text-xs mb-2">
-                        <span className="text-slate-400 font-medium">Claimed units:</span>
-                        {unassigned > 0 ? (
-                          <span className="text-amber-400 font-bold flex items-center gap-1">
-                            ⚠️ {unassigned} left unassigned
-                          </span>
-                        ) : (
-                          <span className="text-emerald-400 font-bold flex items-center gap-1">
-                            ✅ All {order.quantity} assigned
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Display assigned friends */}
-                      <div className="flex flex-wrap gap-2 items-center">
-                        {orderAssignments.map((a) => (
-                          <div
-                            key={a.id}
-                            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-700/70 border border-slate-600/60 text-xs text-white"
-                          >
-                            <span
-                              className="w-2 h-2 rounded-full"
-                              style={{ backgroundColor: a.participant.color }}
-                            />
-                            <span className="font-medium">{a.participant.name}:</span>
-                            <span className="font-extrabold text-blue-400">{a.quantity}</span>
-                          </div>
-                        ))}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <div>
+                          {unassigned > 0 ? (
+                            <span className="text-amber-400 font-bold flex items-center gap-1">
+                              ⚠️ {unassigned} non affecté{unassigned > 1 ? 's' : ''} — tapez qui a pris :
+                            </span>
+                          ) : (
+                            <span className="text-emerald-400 font-bold flex items-center gap-1">
+                              ✅ Tout est affecté ({order.quantity} unité{order.quantity > 1 ? 's' : ''})
+                            </span>
+                          )}
+                        </div>
 
                         {!isClosed && (
                           <button
+                            type="button"
                             onClick={() => setAssigningOrder(order)}
-                            className="px-3 py-1 rounded-full bg-slate-700 hover:bg-slate-600 text-xs font-semibold text-blue-400 hover:text-blue-300 transition-colors"
+                            className="text-[11px] font-semibold text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1 cursor-pointer"
                           >
-                            ✏️ {orderAssignments.length > 0 ? 'Edit Assignments' : 'Assign to Friends'}
+                            <Pencil className="w-3 h-3" />
+                            <span>Détails</span>
                           </button>
                         )}
                       </div>
+
+                      {/* Interactive pills for all participants to assign & tweak units in 1 tap directly on the card */}
+                      <div className="flex flex-wrap gap-2">
+                        {participants.map((p) => {
+                          const assignment = orderAssignments.find(
+                            (a) => a.participant_id === p.id
+                          );
+                          const currentQty = assignment?.quantity || 0;
+                          const hasUnits = currentQty > 0;
+
+                          return (
+                            <div
+                              key={p.id}
+                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all min-h-[38px] ${
+                                hasUnits
+                                  ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-400/40'
+                                  : 'bg-slate-700/50 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
+                              }`}
+                            >
+                              <span
+                                className="w-2.5 h-2.5 rounded-full shrink-0"
+                                style={{ backgroundColor: p.color }}
+                              />
+                              <span
+                                onClick={() => {
+                                  if (isClosed || isPending) return;
+                                  if (unassigned > 0) {
+                                    handleUpdateAssignmentQty(order, p.id, currentQty + 1);
+                                  } else if (hasUnits) {
+                                    handleUpdateAssignmentQty(order, p.id, currentQty - 1);
+                                  }
+                                }}
+                                className="cursor-pointer select-none"
+                              >
+                                {p.name}
+                              </span>
+
+                              {hasUnits && (
+                                <div className="flex items-center gap-1 ml-0.5">
+                                  {!isClosed && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleUpdateAssignmentQty(order, p.id, currentQty - 1);
+                                      }}
+                                      disabled={isPending}
+                                      className="w-5 h-5 rounded-full bg-blue-700 hover:bg-blue-800 active:scale-90 flex items-center justify-center font-black text-xs text-white"
+                                    >
+                                      -
+                                    </button>
+                                  )}
+                                  <span className="text-[11px] font-black bg-blue-800 rounded-full px-1.5 py-0.2">
+                                    ×{currentQty}
+                                  </span>
+                                  {!isClosed && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (unassigned > 0) {
+                                          handleUpdateAssignmentQty(order, p.id, currentQty + 1);
+                                        }
+                                      }}
+                                      disabled={isPending || unassigned <= 0}
+                                      className="w-5 h-5 rounded-full bg-blue-700 hover:bg-blue-800 disabled:opacity-30 active:scale-90 flex items-center justify-center font-black text-xs text-white"
+                                    >
+                                      +
+                                    </button>
+                                  )}
+                                </div>
+                              )}
+
+                              {!hasUnits && unassigned > 0 && !isClosed && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleUpdateAssignmentQty(order, p.id, 1)}
+                                  disabled={isPending}
+                                  className="w-4 h-4 rounded-full bg-slate-600 hover:bg-blue-500 hover:text-white text-slate-300 flex items-center justify-center text-[10px] font-bold"
+                                >
+                                  +
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {participants.length === 0 && (
+                        <p className="text-xs text-amber-400/80 italic">
+                          Ajoutez des amis dans l&apos;onglet Amis pour leur affecter cet article !
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1286,7 +1470,11 @@ export default function OrdersTab({
 
                           {participants.length > 0 && (
                             <span className="text-[10px] text-slate-400">
-                              {item.splitType === 'shared' ? 'Split with:' : 'Assign to:'}
+                              {item.splitType === 'shared'
+                                ? 'Partager avec :'
+                                : item.quantity > 1
+                                ? `Affecter les ${item.quantity} unités (${item.assignedParticipantIds.length}/${item.quantity}) :`
+                                : 'Attribuer à :'}
                             </span>
                           )}
                         </div>
@@ -1294,7 +1482,75 @@ export default function OrdersTab({
                         {participants.length > 0 && (
                           <div className="flex flex-wrap gap-1.5 pt-1">
                             {participants.map((p) => {
-                              const isSelected = item.assignedParticipantIds.includes(p.id);
+                              const pCount = item.assignedParticipantIds.filter((id) => id === p.id).length;
+                              const totalAssigned = item.assignedParticipantIds.length;
+                              const isSelected = item.splitType === 'shared'
+                                ? item.assignedParticipantIds.includes(p.id)
+                                : pCount > 0;
+
+                              if (item.splitType === 'individual' && item.quantity > 1) {
+                                return (
+                                  <div
+                                    key={p.id}
+                                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-semibold transition-all min-h-[34px] ${
+                                      pCount > 0
+                                        ? 'bg-blue-600 text-white shadow-sm ring-1 ring-blue-400'
+                                        : 'bg-slate-900/80 text-slate-400 hover:text-white border border-slate-700/60'
+                                    }`}
+                                  >
+                                    <span
+                                      className="w-2 h-2 rounded-full shrink-0"
+                                      style={{ backgroundColor: p.color }}
+                                    />
+                                    <span
+                                      onClick={() => {
+                                        if (totalAssigned < item.quantity) {
+                                          handleAdjustRoundItemParticipantQty(item.id, p.id, 1);
+                                        } else if (pCount > 0) {
+                                          handleAdjustRoundItemParticipantQty(item.id, p.id, -1);
+                                        }
+                                      }}
+                                      className="cursor-pointer select-none"
+                                    >
+                                      {p.name}
+                                    </span>
+
+                                    {pCount > 0 ? (
+                                      <div className="flex items-center gap-1 ml-0.5">
+                                        <button
+                                          type="button"
+                                          onClick={() => handleAdjustRoundItemParticipantQty(item.id, p.id, -1)}
+                                          className="w-5 h-5 rounded bg-blue-700 hover:bg-blue-800 flex items-center justify-center font-black text-xs text-white"
+                                        >
+                                          -
+                                        </button>
+                                        <span className="font-black text-xs px-0.5">
+                                          ×{pCount}
+                                        </span>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleAdjustRoundItemParticipantQty(item.id, p.id, 1)}
+                                          disabled={totalAssigned >= item.quantity}
+                                          className="w-5 h-5 rounded bg-blue-700 hover:bg-blue-800 disabled:opacity-30 flex items-center justify-center font-black text-xs text-white"
+                                        >
+                                          +
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      totalAssigned < item.quantity && (
+                                        <button
+                                          type="button"
+                                          onClick={() => handleAdjustRoundItemParticipantQty(item.id, p.id, 1)}
+                                          className="w-4 h-4 rounded bg-slate-700 hover:bg-blue-500 hover:text-white text-slate-300 flex items-center justify-center text-[10px] font-bold"
+                                        >
+                                          +
+                                        </button>
+                                      )
+                                    )}
+                                  </div>
+                                );
+                              }
+
                               return (
                                 <button
                                   key={p.id}

@@ -641,11 +641,25 @@ export async function createBatchOrders(
             });
           }
         } else {
-          allAssignmentsToInsert.push({
-            order_id: newOrder.id,
-            participant_id: item.assigned_participant_ids[0],
-            quantity: quantity,
-          });
+          if (item.assigned_participant_ids.length === 1 && quantity > 1) {
+            allAssignmentsToInsert.push({
+              order_id: newOrder.id,
+              participant_id: item.assigned_participant_ids[0],
+              quantity: quantity,
+            });
+          } else {
+            const counts: Record<string, number> = {};
+            for (const pId of item.assigned_participant_ids) {
+              counts[pId] = (counts[pId] || 0) + 1;
+            }
+            for (const [pId, count] of Object.entries(counts)) {
+              allAssignmentsToInsert.push({
+                order_id: newOrder.id,
+                participant_id: pId,
+                quantity: Math.min(count, quantity),
+              });
+            }
+          }
         }
       }
     });

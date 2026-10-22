@@ -17,7 +17,12 @@ import {
   Beer,
   Pizza,
 } from 'lucide-react';
-import { scanReceiptWithGemini, ParsedReceiptItem, ParsedReceiptResult } from '@/lib/gemini';
+import {
+  scanReceiptWithGemini,
+  checkGeminiServerStatus,
+  ParsedReceiptItem,
+  ParsedReceiptResult,
+} from '@/lib/gemini';
 import { CreateBatchOrderItem } from '@/lib/actions';
 
 interface ReceiptScannerModalProps {
@@ -35,6 +40,7 @@ export default function ReceiptScannerModal({
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [geminiApiKey, setGeminiApiKey] = useState<string>('');
   const [apiKeyInput, setApiKeyInput] = useState<string>('');
+  const [isServerConfigured, setIsServerConfigured] = useState<boolean>(false);
   const [scannedResult, setScannedResult] = useState<ParsedReceiptResult | null>(null);
   const [editedItems, setEditedItems] = useState<ParsedReceiptItem[]>([]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -43,14 +49,20 @@ export default function ReceiptScannerModal({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
-  // Load saved Gemini API key from localStorage
+  // Load saved Gemini API key from localStorage and verify server status
   useEffect(() => {
     const saved = localStorage.getItem('mess-gemini-key');
     if (saved) {
       setGeminiApiKey(saved);
       setApiKeyInput(saved);
     }
-  }, []);
+
+    if (isOpen) {
+      checkGeminiServerStatus()
+        .then((res) => setIsServerConfigured(res.configured))
+        .catch(() => setIsServerConfigured(false));
+    }
+  }, [isOpen]);
 
   // Reset state on open/close
   useEffect(() => {
@@ -256,9 +268,15 @@ export default function ReceiptScannerModal({
             <div>
               <h2 className="text-base sm:text-lg font-black text-white tracking-tight flex items-center gap-2">
                 <span>Scanner l&apos;Addition</span>
-                <span className="text-[10px] uppercase font-extrabold px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30">
-                  Gemini Vision
-                </span>
+                {isServerConfigured ? (
+                  <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                    ✨ Gemini Pro Actif
+                  </span>
+                ) : (
+                  <span className="text-[10px] uppercase font-extrabold px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                    Gemini Vision
+                  </span>
+                )}
               </h2>
               <p className="text-xs text-slate-400">
                 Photo du ticket ➔ Recréation automatique en 2 secondes
@@ -336,6 +354,21 @@ export default function ReceiptScannerModal({
                 </button>
               </div>
 
+              {/* Server Pro Status Badge */}
+              {isServerConfigured && (
+                <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 flex items-center gap-3 text-xs text-emerald-300">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0 font-bold text-sm">
+                    ✨
+                  </div>
+                  <div className="leading-tight">
+                    <span className="font-bold text-emerald-200 block">Compte Gemini Pro Connecté</span>
+                    <span className="text-[11px] text-emerald-400/80">
+                      L&apos;IA est prise en charge par l&apos;hôte. Prenez simplement la photo de l&apos;addition !
+                    </span>
+                  </div>
+                </div>
+              )}
+
               {/* Instructions / Tips Card */}
               <div className="p-4 rounded-2xl bg-slate-800/40 border border-slate-700/60 text-xs text-slate-400 space-y-2">
                 <span className="font-bold text-slate-300 block">💡 Conseils pour un scan parfait :</span>
@@ -354,7 +387,13 @@ export default function ReceiptScannerModal({
                   className="text-slate-400 hover:text-blue-400 flex items-center gap-1.5 transition-colors cursor-pointer text-[11px]"
                 >
                   <Key className="w-3.5 h-3.5" />
-                  <span>{geminiApiKey ? 'Modifier la clé Gemini API' : 'Configurer clé Gemini'}</span>
+                  <span>
+                    {isServerConfigured
+                      ? 'Compte Serveur Pro actif'
+                      : geminiApiKey
+                      ? 'Modifier la clé Gemini'
+                      : 'Activer avec mon abonnement Pro'}
+                  </span>
                 </button>
               </div>
             </div>
@@ -399,23 +438,50 @@ export default function ReceiptScannerModal({
             </div>
           )}
 
-          {/* STEP 3: API KEY CONFIGURATION MODAL */}
+          {/* STEP 3: API KEY / GEMINI PRO CONFIGURATION */}
           {step === 'need_key' && (
             <div className="space-y-4 py-2">
               <div className="p-4 rounded-3xl bg-blue-500/10 border border-blue-500/30 space-y-2 text-center">
-                <div className="w-12 h-12 rounded-2xl bg-blue-600/30 border border-blue-500/40 mx-auto flex items-center justify-center text-blue-400">
-                  <Key className="w-6 h-6" />
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 mx-auto flex items-center justify-center text-white shadow-lg shadow-blue-900/30">
+                  <Sparkles className="w-6 h-6 text-amber-300" />
                 </div>
-                <h3 className="text-sm font-bold text-white">Clé API Google Gemini requise</h3>
+                <h3 className="text-sm font-bold text-white">Intégration Gemini Pro & Clé API</h3>
                 <p className="text-xs text-slate-300 max-w-sm mx-auto leading-relaxed">
-                  L&apos;analyse visuelle d&apos;addition utilise l&apos;intelligence artificielle Google Gemini Vision.
-                  La clé API est <strong>100% gratuite</strong>.
+                  L&apos;IA est <strong>100% gérée par votre compte hôte</strong>. Vos amis n&apos;ont rien à payer ni à configurer : ils prennent simplement la photo !
                 </p>
+              </div>
+
+              {/* Pro Server Setup Guide */}
+              <div className="p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700/80 text-xs text-slate-300 space-y-2">
+                <span className="font-bold text-white flex items-center gap-1.5">
+                  <span>🚀 Comment activer pour TOUT LE MONDE :</span>
+                </span>
+                <ol className="space-y-1.5 list-decimal list-inside text-[11px] text-slate-300 leading-relaxed">
+                  <li>
+                    Ouvrez{' '}
+                    <a
+                      href="https://aistudio.google.com/app/apikey"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-400 underline font-semibold inline-flex items-center gap-0.5"
+                    >
+                      Google AI Studio <ExternalLink className="w-3 h-3" />
+                    </a>{' '}
+                    avec votre compte Google / Pro.
+                  </li>
+                  <li>Cliquez sur <strong>&quot;Create API Key&quot;</strong>.</li>
+                  <li>
+                    Ajoutez la variable <code>GEMINI_API_KEY</code> sur votre hébergement (Render / Vercel) ou dans votre <code>.env.local</code>.
+                  </li>
+                </ol>
+                <div className="pt-1 text-[11px] text-emerald-400 font-semibold border-t border-slate-700/60">
+                  ✨ Dès que cette variable est configurée sur le serveur, plus aucun utilisateur ne verra cet écran : le scan sera 100% transparent et immédiat pour tous !
+                </div>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                  Collez votre clé API Gemini :
+                  Ou collez votre clé pour l&apos;activer directement sur ce téléphone :
                 </label>
                 <input
                   type="password"
@@ -424,20 +490,7 @@ export default function ReceiptScannerModal({
                   placeholder="AIzaSy..."
                   className="w-full px-4 py-3 rounded-2xl bg-slate-800 border border-slate-700 text-white text-sm font-mono placeholder-slate-500 focus:outline-none focus:border-blue-500 min-h-[48px]"
                 />
-                <p className="text-[11px] text-slate-400 mt-1.5">
-                  Elle reste stockée localement sur votre téléphone en toute sécurité.
-                </p>
               </div>
-
-              <a
-                href="https://aistudio.google.com/app/apikey"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 underline font-semibold"
-              >
-                <span>Obtenir une clé gratuite sur Google AI Studio</span>
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
 
               <div className="flex items-center gap-2 pt-2">
                 <button

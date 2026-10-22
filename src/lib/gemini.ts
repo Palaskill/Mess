@@ -54,15 +54,22 @@ Respond ONLY with a valid JSON object matching this schema:
   "total": 0.00
 }`;
 
+export async function checkGeminiServerStatus(): Promise<{ configured: boolean }> {
+  const hasKey = Boolean(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim().length > 0);
+  return {
+    configured: hasKey,
+  };
+}
+
 export async function scanReceiptWithGemini(
   base64Data: string,
   mimeType: string,
   clientApiKey?: string
 ): Promise<{ success: boolean; data?: ParsedReceiptResult; error?: string }> {
   try {
-    const apiKey = (clientApiKey && clientApiKey.trim().length > 0)
-      ? clientApiKey.trim()
-      : process.env.GEMINI_API_KEY;
+    const apiKey = (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim().length > 0)
+      ? process.env.GEMINI_API_KEY.trim()
+      : (clientApiKey && clientApiKey.trim().length > 0 ? clientApiKey.trim() : '');
 
     if (!apiKey) {
       return {
@@ -80,8 +87,8 @@ export async function scanReceiptWithGemini(
 
     const validMimeType = mimeType || 'image/jpeg';
 
-    // Try Gemini 2.5 Flash first, then fallback to Gemini 1.5 Flash
-    const models = ['gemini-2.5-flash', 'gemini-1.5-flash'];
+    // Try Gemini 2.5 Flash, Gemini 1.5 Flash, and Gemini 1.5 Pro
+    const models = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
     let lastError = '';
 
     for (const model of models) {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Session,
@@ -32,11 +32,28 @@ export default function SessionView({
 }: SessionViewProps) {
   const [activeTab, setActiveTab] = useState<'orders' | 'friends' | 'bill'>('orders');
 
+  // Optimistic local states for instant 0ms response on user interactions
+  const [localOrders, setLocalOrders] = useState<Order[]>(orders);
+  const [localParticipants, setLocalParticipants] = useState<Participant[]>(participants);
+  const [localAssignments, setLocalAssignments] = useState<(Assignment & { participant: Participant })[]>(assignments);
+
+  useEffect(() => {
+    setLocalOrders(orders);
+  }, [orders]);
+
+  useEffect(() => {
+    setLocalParticipants(participants);
+  }, [participants]);
+
+  useEffect(() => {
+    setLocalAssignments(assignments);
+  }, [assignments]);
+
   const isClosed = session.status === 'closed';
 
   // Calculate unassigned units across all individual orders
-  const totalUnassignedUnits = orders.reduce((sum, order) => {
-    return sum + getUnassignedQuantity(order, assignments);
+  const totalUnassignedUnits = localOrders.reduce((sum, order) => {
+    return sum + getUnassignedQuantity(order, localAssignments);
   }, 0);
 
   return (
@@ -174,19 +191,23 @@ export default function SessionView({
           {activeTab === 'orders' && (
             <OrdersTab
               sessionId={session.id}
-              orders={orders}
-              participants={participants}
-              assignments={assignments}
+              orders={localOrders}
+              participants={localParticipants}
+              assignments={localAssignments}
               menuItems={menuItems}
               isClosed={isClosed}
+              setOrders={setLocalOrders}
+              setAssignments={setLocalAssignments}
             />
           )}
 
           {activeTab === 'friends' && (
             <FriendsTab
               sessionId={session.id}
-              participants={participants}
+              participants={localParticipants}
               isClosed={isClosed}
+              setParticipants={setLocalParticipants}
+              setAssignments={setLocalAssignments}
             />
           )}
 
@@ -195,9 +216,9 @@ export default function SessionView({
               sessionId={session.id}
               sessionName={session.name}
               isClosed={isClosed}
-              orders={orders}
-              participants={participants}
-              assignments={assignments}
+              orders={localOrders}
+              participants={localParticipants}
+              assignments={localAssignments}
             />
           )}
         </div>

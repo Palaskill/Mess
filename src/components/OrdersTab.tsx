@@ -24,6 +24,8 @@ interface OrdersTabProps {
   assignments: (Assignment & { participant: Participant })[];
   menuItems: MenuItem[];
   isClosed: boolean;
+  setOrders?: React.Dispatch<React.SetStateAction<Order[]>>;
+  setAssignments?: React.Dispatch<React.SetStateAction<(Assignment & { participant: Participant })[]>>;
 }
 
 export interface RoundItem {
@@ -44,6 +46,8 @@ export default function OrdersTab({
   assignments,
   menuItems,
   isClosed,
+  setOrders,
+  setAssignments,
 }: OrdersTabProps) {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [roundItems, setRoundItems] = useState<RoundItem[]>([]);
@@ -226,25 +230,73 @@ export default function OrdersTab({
 
     setError(null);
 
-    startTransition(async () => {
-      const itemsToSubmit: CreateBatchOrderItem[] = roundItems.map((r) => ({
-        menu_item_id: r.menuItemId || null,
-        item_name: r.name,
-        quantity: r.quantity,
-        unit_price: r.unitPrice,
-        split_type: r.splitType,
-        assigned_participant_ids: r.assignedParticipantIds,
-      }));
+    const itemsToSubmit: CreateBatchOrderItem[] = roundItems.map((r) => ({
+      menu_item_id: r.menuItemId || null,
+      item_name: r.name,
+      quantity: r.quantity,
+      unit_price: r.unitPrice,
+      split_type: r.splitType,
+      assigned_participant_ids: r.assignedParticipantIds,
+    }));
 
-      const res = await createBatchOrders(sessionId, itemsToSubmit);
-      if (res.success) {
-        setIsAddOpen(false);
-        setRoundItems([]);
-        setCustomName('');
-        setCustomPrice('');
-        setError(null);
-      } else {
-        setError(res.error || 'Failed to create orders');
+    // ⚡ INSTANT OPTIMISTIC UI: close modal immediately & display new items in 0ms!
+    const savedRoundItems = [...roundItems];
+    const timestamp = Date.now();
+    const optimisticOrders: Order[] = roundItems.map((r, idx) => ({
+      id: `temp-${timestamp}-${idx}`,
+      session_id: sessionId,
+      menu_item_id: r.menuItemId || null,
+      item_name: r.name,
+      quantity: r.quantity,
+      unit_price: r.unitPrice,
+      split_type: r.splitType,
+      created_at: new Date(timestamp - idx * 1000).toISOString(),
+    }));
+
+    const optimisticAssignments: (Assignment & { participant: Participant })[] = [];
+    optimisticOrders.forEach((newOrder, idx) => {
+      const r = savedRoundItems[idx];
+      if (r.assignedParticipantIds && r.assignedParticipantIds.length > 0) {
+        r.assignedParticipantIds.forEach((pId) => {
+          const participant = participants.find((p) => p.id === pId);
+          if (participant) {
+            optimisticAssignments.push({
+              id: `temp-a-${timestamp}-${idx}-${pId}`,
+              order_id: newOrder.id,
+              participant_id: pId,
+              quantity: r.splitType === 'shared' ? 1 : r.quantity,
+              participant,
+            });
+          }
+        });
+      }
+    });
+
+    setOrders?.((prev) => [...optimisticOrders, ...prev]);
+    if (optimisticAssignments.length > 0) {
+      setAssignments?.((prev) => [...prev, ...optimisticAssignments]);
+    }
+
+    setIsAddOpen(false);
+    setRoundItems([]);
+    setCustomName('');
+    setCustomPrice('');
+
+    startTransition(async () => {
+      try {
+        const res = await createBatchOrders(sessionId, itemsToSubmit);
+        if (!res.success) {
+          // Revert optimistic additions if server error
+          setOrders?.(orders);
+          setAssignments?.(assignments);
+          setError(res.error || 'Failed to create orders');
+          setIsAddOpen(true);
+        }
+      } catch (err: any) {
+        setOrders?.(orders);
+        setAssignments?.(assignments);
+        setError(err?.message || 'Failed to create orders');
+        setIsAddOpen(true);
       }
     });
   };
@@ -255,8 +307,25 @@ export default function OrdersTab({
   // Delete an order
   const handleDeleteOrder = async (orderId: string, itemName: string) => {
     if (confirm(`Remove "${itemName}" from orders?`)) {
+      // ⚡ INSTANT OPTIMISTIC UI: remove from UI immediately
+      const prevOrders = orders;
+      const prevAssignments = assignments;
+      setOrders?.((prev) => prev.filter((o) => o.id !== orderId));
+      setAssignments?.((prev) => prev.filter((a) => a.order_id !== orderId));
+
       startTransition(async () => {
-        await deleteOrder(orderId, sessionId);
+        try {
+          const res = await deleteOrder(orderId, sessionId);
+          if (!res.success) {
+            setOrders?.(prevOrders);
+            setAssignments?.(prevAssignments);
+            alert(res.error || 'Failed to remove order');
+          }
+        } catch (err: any) {
+          setOrders?.(prevOrders);
+          setAssignments?.(prevAssignments);
+          alert(err?.message || 'Failed to remove order');
+        }
       });
     }
   };
@@ -268,13 +337,41 @@ export default function OrdersTab({
       (a) => a.order_id === order.id && a.participant_id === participant.id
     );
 
+    // ⚡ INSTANT OPTIMISTIC UI: toggle immediately in 0ms!
+    const prevAssignments = assignments;
+    setAssignments?.((prev) => {
+      if (isAssigned) {
+        return prev.filter(
+          (a) => !(a.order_id === order.id && a.participant_id === participant.id)
+        );
+      } else {
+        return [
+          ...prev,
+          {
+            id: `temp-a-${Date.now()}`,
+            order_id: order.id,
+            participant_id: participant.id,
+            quantity: 1,
+            participant,
+          },
+        ];
+      }
+    });
+
     startTransition(async () => {
-      await toggleSharedAssignment(
-        order.id,
-        participant.id,
-        isAssigned,
-        sessionId
-      );
+      try {
+        const res = await toggleSharedAssignment(
+          order.id,
+          participant.id,
+          isAssigned,
+          sessionId
+        );
+        if (!res.success) {
+          setAssignments?.(prevAssignments);
+        }
+      } catch {
+        setAssignments?.(prevAssignments);
+      }
     });
   };
 
@@ -285,11 +382,53 @@ export default function OrdersTab({
     newQty: number
   ) => {
     if (isClosed) return;
+    const participant = participants.find((p) => p.id === participantId);
+    const prevAssignments = assignments;
+
+    // ⚡ INSTANT OPTIMISTIC UI: update quantity in 0ms!
+    if (participant) {
+      setAssignments?.((prev) => {
+        if (newQty <= 0) {
+          return prev.filter(
+            (a) => !(a.order_id === order.id && a.participant_id === participantId)
+          );
+        }
+        const exists = prev.some(
+          (a) => a.order_id === order.id && a.participant_id === participantId
+        );
+        if (exists) {
+          return prev.map((a) =>
+            a.order_id === order.id && a.participant_id === participantId
+              ? { ...a, quantity: newQty }
+              : a
+          );
+        }
+        return [
+          ...prev,
+          {
+            id: `temp-a-${Date.now()}`,
+            order_id: order.id,
+            participant_id: participantId,
+            quantity: newQty,
+            participant,
+          },
+        ];
+      });
+    }
+
     startTransition(async () => {
-      if (newQty <= 0) {
-        await unassignItem(order.id, participantId, sessionId);
-      } else {
-        await assignItem(order.id, participantId, newQty, sessionId);
+      try {
+        let res;
+        if (newQty <= 0) {
+          res = await unassignItem(order.id, participantId, sessionId);
+        } else {
+          res = await assignItem(order.id, participantId, newQty, sessionId);
+        }
+        if (!res.success) {
+          setAssignments?.(prevAssignments);
+        }
+      } catch {
+        setAssignments?.(prevAssignments);
       }
     });
   };

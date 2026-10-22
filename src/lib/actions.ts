@@ -46,6 +46,14 @@ export async function getMenuItems(): Promise<MenuItem[]> {
   }
 }
 
+// In-memory cache for menu order stats (avoids querying entire historical orders table on every action)
+let cachedOrderStats: {
+  timestamp: number;
+  idCountMap: Record<string, number>;
+  nameCountMap: Record<string, number>;
+} | null = null;
+const STATS_CACHE_TTL = 3 * 60 * 1000; // 3 minutes
+
 export async function getActiveMenuItems(): Promise<MenuItem[]> {
   try {
     const supabase = await getSupabase();
@@ -59,25 +67,37 @@ export async function getActiveMenuItems(): Promise<MenuItem[]> {
       return [];
     }
 
-    // Fetch order counts across all sessions to rank items by most commonly ordered
-    const { data: orderStats } = await supabase
-      .from('orders')
-      .select('menu_item_id, item_name, quantity');
+    const now = Date.now();
+    let idCountMap: Record<string, number> = {};
+    let nameCountMap: Record<string, number> = {};
 
-    const idCountMap: Record<string, number> = {};
-    const nameCountMap: Record<string, number> = {};
+    if (cachedOrderStats && now - cachedOrderStats.timestamp < STATS_CACHE_TTL) {
+      idCountMap = cachedOrderStats.idCountMap;
+      nameCountMap = cachedOrderStats.nameCountMap;
+    } else {
+      // Fetch order counts across all sessions to rank items by most commonly ordered
+      const { data: orderStats } = await supabase
+        .from('orders')
+        .select('menu_item_id, item_name, quantity');
 
-    if (orderStats) {
-      for (const ord of orderStats) {
-        const qty = ord.quantity || 1;
-        if (ord.menu_item_id) {
-          idCountMap[ord.menu_item_id] = (idCountMap[ord.menu_item_id] || 0) + qty;
-        }
-        if (ord.item_name) {
-          const lowerName = ord.item_name.trim().toLowerCase();
-          nameCountMap[lowerName] = (nameCountMap[lowerName] || 0) + qty;
+      if (orderStats) {
+        for (const ord of orderStats) {
+          const qty = ord.quantity || 1;
+          if (ord.menu_item_id) {
+            idCountMap[ord.menu_item_id] = (idCountMap[ord.menu_item_id] || 0) + qty;
+          }
+          if (ord.item_name) {
+            const lowerName = ord.item_name.trim().toLowerCase();
+            nameCountMap[lowerName] = (nameCountMap[lowerName] || 0) + qty;
+          }
         }
       }
+
+      cachedOrderStats = {
+        timestamp: now,
+        idCountMap,
+        nameCountMap,
+      };
     }
 
     // Standard bar staple weights to provide intelligent initial ranking if few orders
@@ -566,54 +586,75 @@ export async function createBatchOrders(
       return { success: false, error: 'At least one item is required' };
     }
 
-    const supabase = await getSupabase();
-
-    for (const item of items) {
-      const quantity = Math.max(1, parseInt(String(item.quantity), 10) || 1);
+    const validItems = items.filter((item) => {
       const unitPrice = parseFloat(String(item.unit_price));
       const itemName = item.item_name?.trim();
+      return itemName && !isNaN(unitPrice) && unitPrice >= 0;
+    });
 
-      if (!itemName || isNaN(unitPrice) || unitPrice < 0) {
-        continue;
-      }
+    if (validItems.length === 0) {
+      return { success: false, error: 'No valid items to order' };
+    }
 
-      const { data: newOrder, error } = await supabase
-        .from('orders')
-        .insert([
-          {
-            session_id: sessionId,
-            menu_item_id: item.menu_item_id || null,
-            item_name: itemName,
-            quantity,
-            unit_price: unitPrice,
-            split_type: item.split_type || 'individual',
-          },
-        ])
-        .select('id')
-        .single();
+    const supabase = await getSupabase();
 
-      if (error || !newOrder) {
-        console.error('Error creating order in batch:', error);
-        continue;
-      }
+    // 1. Bulk insert all orders in a single database round-trip
+    const ordersToInsert = validItems.map((item) => ({
+      session_id: sessionId,
+      menu_item_id: item.menu_item_id || null,
+      item_name: item.item_name.trim(),
+      quantity: Math.max(1, parseInt(String(item.quantity), 10) || 1),
+      unit_price: parseFloat(String(item.unit_price)),
+      split_type: item.split_type || 'individual',
+    }));
+
+    const { data: insertedOrders, error: orderError } = await supabase
+      .from('orders')
+      .insert(ordersToInsert)
+      .select('id');
+
+    if (orderError || !insertedOrders || insertedOrders.length === 0) {
+      console.error('Error creating orders in bulk:', orderError);
+      return { success: false, error: orderError?.message || 'Failed to create orders' };
+    }
+
+    // 2. Prepare and bulk insert all assignments in a single database round-trip
+    const allAssignmentsToInsert: {
+      order_id: string;
+      participant_id: string;
+      quantity: number;
+    }[] = [];
+
+    insertedOrders.forEach((newOrder, idx) => {
+      const item = validItems[idx];
+      const quantity = Math.max(1, parseInt(String(item.quantity), 10) || 1);
 
       if (item.assigned_participant_ids && item.assigned_participant_ids.length > 0) {
         if (item.split_type === 'shared') {
-          const assignmentsToInsert = item.assigned_participant_ids.map((pId) => ({
-            order_id: newOrder.id,
-            participant_id: pId,
-            quantity: 1,
-          }));
-          await supabase.from('assignments').insert(assignmentsToInsert);
-        } else {
-          await supabase.from('assignments').insert([
-            {
+          for (const pId of item.assigned_participant_ids) {
+            allAssignmentsToInsert.push({
               order_id: newOrder.id,
-              participant_id: item.assigned_participant_ids[0],
-              quantity: quantity,
-            },
-          ]);
+              participant_id: pId,
+              quantity: 1,
+            });
+          }
+        } else {
+          allAssignmentsToInsert.push({
+            order_id: newOrder.id,
+            participant_id: item.assigned_participant_ids[0],
+            quantity: quantity,
+          });
         }
+      }
+    });
+
+    if (allAssignmentsToInsert.length > 0) {
+      const { error: assignError } = await supabase
+        .from('assignments')
+        .insert(allAssignmentsToInsert);
+
+      if (assignError) {
+        console.error('Error inserting bulk assignments:', assignError);
       }
     }
 

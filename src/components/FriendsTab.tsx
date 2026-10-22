@@ -1,19 +1,23 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { Participant, PARTICIPANT_COLORS } from '@/types';
+import { Participant, PARTICIPANT_COLORS, Assignment } from '@/types';
 import { addParticipant, removeParticipant } from '@/lib/actions';
 
 interface FriendsTabProps {
   sessionId: string;
   participants: Participant[];
   isClosed: boolean;
+  setParticipants?: React.Dispatch<React.SetStateAction<Participant[]>>;
+  setAssignments?: React.Dispatch<React.SetStateAction<(Assignment & { participant: Participant })[]>>;
 }
 
 export default function FriendsTab({
   sessionId,
   participants,
   isClosed,
+  setParticipants,
+  setAssignments,
 }: FriendsTabProps) {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [name, setName] = useState('');
@@ -23,44 +27,67 @@ export default function FriendsTab({
 
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    const friendName = name.trim();
+    if (!friendName) return;
 
     setError(null);
     const formData = new FormData();
     formData.set('session_id', sessionId);
-    formData.set('name', name.trim());
+    formData.set('name', friendName);
     formData.set('color', selectedColor);
+
+    // ⚡ INSTANT OPTIMISTIC UI: zero second delay!
+    const optimisticId = `temp-${Date.now()}`;
+    const optimisticFriend: Participant = {
+      id: optimisticId,
+      session_id: sessionId,
+      name: friendName,
+      color: selectedColor,
+      joined_at: new Date().toISOString(),
+    };
+
+    setParticipants?.((prev) => [...prev, optimisticFriend]);
+    setName('');
+    const nextColor =
+      PARTICIPANT_COLORS[
+        (participants.length + 1) % PARTICIPANT_COLORS.length
+      ];
+    setSelectedColor(nextColor);
+    setIsAddOpen(false);
 
     startTransition(async () => {
       try {
         const res = await addParticipant(formData);
-        if (res.success) {
-          setName('');
-          // Rotate to next unused color
-          const nextColor =
-            PARTICIPANT_COLORS[
-              (participants.length + 1) % PARTICIPANT_COLORS.length
-            ];
-          setSelectedColor(nextColor);
-          setIsAddOpen(false);
-        } else {
+        if (!res.success) {
+          // Revert optimistic update
+          setParticipants?.((prev) => prev.filter((p) => p.id !== optimisticId));
           setError(res.error || 'Failed to add friend');
+          setIsAddOpen(true);
         }
       } catch (err: any) {
+        setParticipants?.((prev) => prev.filter((p) => p.id !== optimisticId));
         setError(err?.message || 'Failed to add friend');
+        setIsAddOpen(true);
       }
     });
   };
 
   const handleRemove = async (id: string, friendName: string) => {
     if (confirm(`Remove ${friendName} from this session? Their assigned items will be unassigned.`)) {
+      // ⚡ INSTANT OPTIMISTIC UI: remove from UI immediately
+      const prevParticipants = participants;
+      setParticipants?.((prev) => prev.filter((p) => p.id !== id));
+      setAssignments?.((prev) => prev.filter((a) => a.participant_id !== id));
+
       startTransition(async () => {
         try {
           const res = await removeParticipant(id, sessionId);
           if (!res.success) {
+            setParticipants?.(prevParticipants);
             alert(res.error || `Failed to remove ${friendName}`);
           }
         } catch (err: any) {
+          setParticipants?.(prevParticipants);
           alert(err?.message || `Failed to remove ${friendName}`);
         }
       });

@@ -8,6 +8,9 @@ export interface ParsedReceiptItem {
   category: 'drinks' | 'food' | 'other';
   split_type: 'individual' | 'shared';
   assigned_participant_ids?: string[];
+  menu_item_id?: string | null;
+  auto_add_to_menu?: boolean;
+  is_new_product?: boolean;
 }
 
 export interface ParsedReceiptResult {

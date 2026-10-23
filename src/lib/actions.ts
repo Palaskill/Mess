@@ -515,13 +515,49 @@ export async function createOrder(formData: FormData): Promise<{ success: boolea
       return { success: false, error: 'Invalid quantity or price' };
     }
 
+    let finalMenuItemId = menuItemId;
     const supabase = await getSupabase();
+
+    // Dynamically insert into menu_items if not already present
+    if (!finalMenuItemId && itemName) {
+      const { data: existingMenu } = await supabase
+        .from('menu_items')
+        .select('id')
+        .ilike('name', itemName)
+        .limit(1)
+        .maybeSingle();
+
+      if (existingMenu) {
+        finalMenuItemId = existingMenu.id;
+      } else {
+        const { data: newMenu } = await supabase
+          .from('menu_items')
+          .insert([
+            {
+              name: itemName,
+              price: unitPrice,
+              category: splitType === 'shared' ? 'food' : 'drinks',
+              default_split: splitType,
+              is_active: true,
+            },
+          ])
+          .select('id')
+          .maybeSingle();
+
+        if (newMenu) {
+          finalMenuItemId = newMenu.id;
+          revalidatePath('/admin');
+          revalidatePath('/');
+        }
+      }
+    }
+
     const { data: newOrder, error } = await supabase
       .from('orders')
       .insert([
         {
           session_id: sessionId,
-          menu_item_id: menuItemId,
+          menu_item_id: finalMenuItemId,
           item_name: itemName,
           quantity,
           unit_price: unitPrice,
@@ -559,6 +595,8 @@ export async function createOrder(formData: FormData): Promise<{ success: boolea
       }
     }
 
+    revalidatePath('/admin');
+    revalidatePath('/');
     revalidatePath(`/session/${sessionId}`);
     return { success: true };
   } catch (err: any) {
@@ -573,7 +611,9 @@ export interface CreateBatchOrderItem {
   quantity: number;
   unit_price: number;
   split_type: 'individual' | 'shared';
+  category?: 'drinks' | 'food' | 'other';
   assigned_participant_ids?: string[];
+  auto_add_to_menu?: boolean;
 }
 
 export async function createBatchOrders(
@@ -600,15 +640,73 @@ export async function createBatchOrders(
 
     const supabase = await getSupabase();
 
-    // 1. Bulk insert all orders in a single database round-trip
-    const ordersToInsert = validItems.map((item) => ({
-      session_id: sessionId,
-      menu_item_id: item.menu_item_id || null,
-      item_name: item.item_name.trim(),
-      quantity: Math.max(1, parseInt(String(item.quantity), 10) || 1),
-      unit_price: parseFloat(String(item.unit_price)),
-      split_type: item.split_type || 'individual',
-    }));
+    // 0. Auto-sync missing items to menu_items catalog dynamically
+    const { data: currentCatalog } = await supabase
+      .from('menu_items')
+      .select('id, name, price, category, default_split');
+
+    const catalogByName = new Map<string, { id: string; name: string }>();
+    (currentCatalog || []).forEach((m: any) => {
+      catalogByName.set(m.name.trim().toLowerCase(), { id: m.id, name: m.name });
+    });
+
+    const newMenuItemsToInsert: {
+      name: string;
+      price: number;
+      category: 'drinks' | 'food' | 'other';
+      default_split: 'individual' | 'shared';
+      is_active: boolean;
+    }[] = [];
+
+    // Identify items that should be dynamically added to the products catalog
+    for (const item of validItems) {
+      const cleanName = item.item_name.trim();
+      const normalizedName = cleanName.toLowerCase();
+      const shouldAutoAdd = item.auto_add_to_menu !== false;
+
+      if (shouldAutoAdd && !item.menu_item_id && !catalogByName.has(normalizedName)) {
+        // Reserve key to prevent duplicate inserts for identical items in same batch
+        catalogByName.set(normalizedName, { id: '', name: cleanName });
+        newMenuItemsToInsert.push({
+          name: cleanName,
+          price: Math.max(0, parseFloat(String(item.unit_price)) || 0),
+          category: item.category || (item.split_type === 'shared' ? 'food' : 'drinks'),
+          default_split: item.split_type || 'individual',
+          is_active: true,
+        });
+      }
+    }
+
+    if (newMenuItemsToInsert.length > 0) {
+      const { data: createdItems, error: menuErr } = await supabase
+        .from('menu_items')
+        .insert(newMenuItemsToInsert)
+        .select('id, name');
+
+      if (!menuErr && createdItems) {
+        createdItems.forEach((created: any) => {
+          catalogByName.set(created.name.trim().toLowerCase(), { id: created.id, name: created.name });
+        });
+      } else if (menuErr) {
+        console.warn('Notice: Dynamic menu insertion skipped:', menuErr.message);
+      }
+    }
+
+    // 1. Bulk insert all orders in a single database round-trip with resolved menu_item_id
+    const ordersToInsert = validItems.map((item) => {
+      const normalizedName = item.item_name.trim().toLowerCase();
+      const catalogMatch = catalogByName.get(normalizedName);
+      const resolvedMenuItemId = item.menu_item_id || (catalogMatch?.id ? catalogMatch.id : null);
+
+      return {
+        session_id: sessionId,
+        menu_item_id: resolvedMenuItemId,
+        item_name: item.item_name.trim(),
+        quantity: Math.max(1, parseInt(String(item.quantity), 10) || 1),
+        unit_price: parseFloat(String(item.unit_price)),
+        split_type: item.split_type || 'individual',
+      };
+    });
 
     const { data: insertedOrders, error: orderError } = await supabase
       .from('orders')
@@ -674,6 +772,8 @@ export async function createBatchOrders(
       }
     }
 
+    revalidatePath('/admin');
+    revalidatePath('/');
     revalidatePath(`/session/${sessionId}`);
     return { success: true };
   } catch (err: any) {
@@ -692,6 +792,8 @@ export async function deleteOrder(id: string, sessionId: string): Promise<{ succ
       return { success: false, error: error.message };
     }
 
+    revalidatePath('/admin');
+    revalidatePath('/');
     revalidatePath(`/session/${sessionId}`);
     return { success: true };
   } catch (err: any) {
@@ -732,6 +834,8 @@ export async function updateOrder(
       return { success: false, error: error.message };
     }
 
+    revalidatePath('/admin');
+    revalidatePath('/');
     revalidatePath(`/session/${sessionId}`);
     return { success: true };
   } catch (err: any) {
@@ -796,6 +900,8 @@ export async function assignItem(
       return { success: false, error: error.message };
     }
 
+    revalidatePath('/admin');
+    revalidatePath('/');
     revalidatePath(`/session/${sessionId}`);
     return { success: true };
   } catch (err: any) {
@@ -822,6 +928,8 @@ export async function unassignItem(
       return { success: false, error: error.message };
     }
 
+    revalidatePath('/admin');
+    revalidatePath('/');
     revalidatePath(`/session/${sessionId}`);
     return { success: true };
   } catch (err: any) {

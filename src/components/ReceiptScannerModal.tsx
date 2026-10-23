@@ -29,7 +29,7 @@ import {
 } from '@/lib/gemini';
 import { getCurrencySymbol } from '@/lib/utils';
 import { CreateBatchOrderItem } from '@/lib/actions';
-import { Participant } from '@/types';
+import { Participant, MenuItem } from '@/types';
 import gsap from 'gsap';
 import SpotlightCard from '@/components/reactbits/SpotlightCard';
 import ShinyText from '@/components/reactbits/ShinyText';
@@ -40,6 +40,7 @@ interface ReceiptScannerModalProps {
   onClose: () => void;
   onImportOrders: (items: CreateBatchOrderItem[]) => void;
   participants: Participant[];
+  menuItems?: MenuItem[];
 }
 
 export default function ReceiptScannerModal({
@@ -47,6 +48,7 @@ export default function ReceiptScannerModal({
   onClose,
   onImportOrders,
   participants,
+  menuItems = [],
 }: ReceiptScannerModalProps) {
   const [step, setStep] = useState<'upload' | 'analyzing' | 'need_key' | 'wizard' | 'review'>('upload');
   const [wizardIndex, setWizardIndex] = useState<number>(0);
@@ -171,11 +173,22 @@ export default function ReceiptScannerModal({
         if (res.data && res.data.items.length > 0) {
           setScannedResult(res.data);
           setCurrencySymbol(getCurrencySymbol(res.data.currency));
-          const initialItems: ParsedReceiptItem[] = res.data.items.map((it, idx) => ({
-            ...it,
-            id: `item-${Date.now()}-${idx}`,
-            assigned_participant_ids: [],
-          }));
+          const initialItems: ParsedReceiptItem[] = res.data.items.map((it, idx) => {
+            const cleanName = it.name.trim();
+            const match = menuItems?.find(
+              (m) => m.name.trim().toLowerCase() === cleanName.toLowerCase()
+            );
+            return {
+              ...it,
+              id: `item-${Date.now()}-${idx}`,
+              menu_item_id: match ? match.id : null,
+              is_new_product: !match,
+              auto_add_to_menu: !match,
+              category: match ? match.category : it.category || 'drinks',
+              split_type: match ? match.default_split : it.split_type || 'individual',
+              assigned_participant_ids: [],
+            };
+          });
           setEditedItems(initialItems);
           setWizardIndex(0);
           // 🚀 DIRECT TO WIZARD: ask who to assign each row one by one!
@@ -284,6 +297,9 @@ export default function ReceiptScannerModal({
       quantity: Math.max(1, item.quantity),
       unit_price: Math.max(0, item.unit_price),
       split_type: item.split_type,
+      category: item.category,
+      menu_item_id: item.menu_item_id || null,
+      auto_add_to_menu: item.auto_add_to_menu !== false,
       assigned_participant_ids: item.assigned_participant_ids || [],
     }));
 
@@ -794,6 +810,44 @@ export default function ReceiptScannerModal({
                       </button>
                     </div>
                   </div>
+
+                  {/* Dynamic Catalog Integration Badge & Toggle */}
+                  <div className="pt-2 border-t border-slate-700/60">
+                    {currentItem.is_new_product ? (
+                      <div className="flex items-center justify-between p-2.5 rounded-2xl bg-blue-500/10 border border-blue-500/25 text-xs">
+                        <div className="flex items-center gap-2 min-w-0 pr-2">
+                          <span className="text-base shrink-0">✨</span>
+                          <div className="min-w-0">
+                            <span className="font-extrabold text-blue-400 block leading-tight truncate">
+                              Nouveau produit (non répertorié)
+                            </span>
+                            <span className="text-[10px] text-slate-400 block truncate">
+                              Sera ajouté à la carte automatiquement
+                            </span>
+                          </div>
+                        </div>
+                        <label className="flex items-center gap-1.5 cursor-pointer bg-blue-600/20 hover:bg-blue-600/30 px-2.5 py-1.5 rounded-xl border border-blue-500/30 text-[11px] font-bold text-blue-300 select-none shrink-0 transition">
+                          <input
+                            type="checkbox"
+                            checked={currentItem.auto_add_to_menu !== false}
+                            onChange={(e) =>
+                              handleUpdateItem(wizardIndex, { auto_add_to_menu: e.target.checked })
+                            }
+                            className="rounded border-slate-600 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5"
+                          />
+                          <span>Ajouter au menu</span>
+                        </label>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs">
+                        <span className="text-emerald-400 font-semibold flex items-center gap-1.5">
+                          <span>✓</span>
+                          <span>Déjà répertorié dans la carte des produits</span>
+                        </span>
+                        <span className="text-[10px] text-slate-400">ID lié</span>
+                      </div>
+                    )}
+                  </div>
                 </SpotlightCard>
               </div>
 
@@ -993,13 +1047,31 @@ export default function ReceiptScannerModal({
                         </button>
 
                         {/* Name input */}
-                        <input
-                          type="text"
-                          value={item.name}
-                          onChange={(e) => handleUpdateItem(index, { name: e.target.value })}
-                          className="flex-1 px-2.5 py-1.5 rounded-xl bg-slate-900/80 border border-slate-700 text-white text-xs font-bold focus:outline-none focus:border-blue-500"
-                          placeholder="Nom de l'article"
-                        />
+                        <div className="flex-1 flex items-center gap-1.5 min-w-0">
+                          <input
+                            type="text"
+                            value={item.name}
+                            onChange={(e) => handleUpdateItem(index, { name: e.target.value })}
+                            className="flex-1 px-2.5 py-1.5 rounded-xl bg-slate-900/80 border border-slate-700 text-white text-xs font-bold focus:outline-none focus:border-blue-500 min-w-0"
+                            placeholder="Nom de l'article"
+                          />
+                          {item.is_new_product ? (
+                            <span
+                              title="Ce produit n'est pas dans la base : il sera ajouté automatiquement au menu"
+                              className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/40 shrink-0 flex items-center gap-0.5"
+                            >
+                              <span>✨</span>
+                              <span className="hidden xs:inline">Nouveau</span>
+                            </span>
+                          ) : (
+                            <span
+                              title="Produit déjà enregistré dans le menu"
+                              className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-800 text-slate-400 border border-slate-700/60 shrink-0 hidden xs:inline"
+                            >
+                              ✓ Menu
+                            </span>
+                          )}
+                        </div>
 
                         {/* Delete button */}
                         <button

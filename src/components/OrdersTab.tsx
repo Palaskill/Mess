@@ -353,6 +353,8 @@ export default function OrdersTab({
       quantity: r.quantity,
       unit_price: r.unitPrice,
       split_type: r.splitType,
+      category: r.category,
+      auto_add_to_menu: true,
       assigned_participant_ids: r.assignedParticipantIds,
     }));
 
@@ -578,7 +580,7 @@ export default function OrdersTab({
     const optimisticOrders: Order[] = scannedItems.map((item, idx) => ({
       id: `temp-scan-${timestamp}-${idx}`,
       session_id: sessionId,
-      menu_item_id: null,
+      menu_item_id: item.menu_item_id || null,
       item_name: item.item_name,
       quantity: item.quantity,
       unit_price: item.unit_price,
@@ -2115,6 +2117,7 @@ export default function OrdersTab({
         onClose={() => setIsScannerOpen(false)}
         onImportOrders={handleImportScannedOrders}
         participants={participants}
+        menuItems={menuItems}
       />
     </div>
   );

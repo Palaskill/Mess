@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import BottomNav from '@/components/BottomNav';
+import SmoothScroll from '@/components/SmoothScroll';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -57,10 +58,12 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-full bg-slate-900 text-slate-100 flex flex-col antialiased selection:bg-blue-500/30">
-        <main className="flex-1 pb-28 pt-[env(safe-area-inset-top)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
-          {children}
-        </main>
-        <BottomNav />
+        <SmoothScroll>
+          <main className="flex-1 pb-28 pt-[env(safe-area-inset-top)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
+            {children}
+          </main>
+          <BottomNav />
+        </SmoothScroll>
       </body>
     </html>
   );

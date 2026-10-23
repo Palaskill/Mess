@@ -1320,7 +1320,7 @@ export default function OrdersTab({
                                   </div>
                                   <div className="flex items-baseline justify-between gap-1 mt-0.5">
                                     <span className="text-xs font-extrabold text-emerald-400">
-                                      ${Number(item.price).toFixed(2)}
+                                      {formatCurrency(item.price)}
                                     </span>
                                     {isTopPick ? (
                                       <span className="text-[9px] font-bold text-amber-400 bg-amber-400/10 px-1 py-0.2 rounded border border-amber-400/20">
@@ -1543,9 +1543,9 @@ export default function OrdersTab({
                               <span className="truncate max-w-[170px]">{item.name}</span>
                             </div>
                             <div className="text-[11px] text-slate-400">
-                              ${item.unitPrice.toFixed(2)} × {item.quantity} ={' '}
+                              {formatCurrency(item.unitPrice)} × {item.quantity} ={' '}
                               <span className="font-bold text-emerald-400">
-                                ${(item.unitPrice * item.quantity).toFixed(2)}
+                                {formatCurrency(item.unitPrice * item.quantity)}
                               </span>
                             </div>
                           </div>
@@ -1716,7 +1716,7 @@ export default function OrdersTab({
                     : `${totalRoundItemsCount} item${totalRoundItemsCount > 1 ? 's' : ''} in round`}
                 </span>
                 <span className="text-xl font-black text-emerald-400">
-                  ${totalRoundCost.toFixed(2)}
+                  {formatCurrency(totalRoundCost)}
                 </span>
               </div>
 
@@ -1791,7 +1791,7 @@ export default function OrdersTab({
                       ? `⚠️ ${currentUnassigned} remaining to assign`
                       : '✅ All units assigned!'}
                   </span>
-                  <span>${Number(assigningOrder.unit_price).toFixed(2)} each</span>
+                  <span>{formatCurrency(assigningOrder.unit_price)} each</span>
                 </div>
               );
             })()}
@@ -2070,7 +2070,7 @@ export default function OrdersTab({
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-slate-400 font-medium">Nouveau total calculé :</span>
                     <span className="text-base font-black text-emerald-400">
-                      ${calculatedTotal.toFixed(2)}
+                      {formatCurrency(calculatedTotal)}
                     </span>
                   </div>
                   {editingWeightOrder.split_type === 'shared' && (
@@ -2079,7 +2079,7 @@ export default function OrdersTab({
                         Partage ({sharersCount} {sharersCount > 1 ? 'amis' : 'ami'}) :
                       </span>
                       <span className="font-bold text-blue-400">
-                        ${perSharer.toFixed(2)} / personne
+                        {formatCurrency(perSharer)} / personne
                       </span>
                     </div>
                   )}

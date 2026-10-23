@@ -260,8 +260,8 @@ export default function CreateSessionForm({
                         disabled={isPending}
                         className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left transition-all touch-manipulation min-h-[46px] ${
                           isSelected
-                            ? 'bg-slate-800/90 border-blue-500/80 text-white shadow-sm ring-1 ring-blue-500/20'
-                            : 'bg-slate-900/50 border-slate-800 text-slate-400 hover:border-slate-700 opacity-60'
+                            ? 'friend-chip-selected bg-slate-800/90 border-blue-500/80 text-white shadow-sm ring-1 ring-blue-500/20'
+                            : 'friend-chip-unselected bg-slate-900/50 border-slate-800 text-slate-400 hover:border-slate-700 opacity-60'
                         }`}
                       >
                         <div

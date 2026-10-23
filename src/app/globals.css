@@ -105,9 +105,14 @@ html {
   }
 }
 
-/* ==========================================
-   LIGHT THEME SYSTEM OVERRIDES
-   ========================================== */
+/* ==========================================================================
+   PREMIUM LIGHT THEME DESIGN SYSTEM (Apple & Stripe inspired)
+   ========================================================================== */
+
+html.dark {
+  color-scheme: dark;
+}
+
 html.light {
   --background: #f8fafc;
   --foreground: #0f172a;
@@ -118,53 +123,108 @@ html.light {
   color-scheme: light;
 }
 
-html.dark {
-  color-scheme: dark;
-}
-
+/* Base Body Background & Text */
 html.light body {
   background-color: #f8fafc !important;
   color: #0f172a !important;
 }
 
-/* Light mode background surfaces */
-html.light .bg-slate-900,
-html.light .bg-slate-950 {
+/* Primary Cards (Crisp White with elegant ambient elevation) */
+html.light .session-card,
+html.light .order-card,
+html.light .bill-card,
+html.light .spotlight-card {
   background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.05), 0 2px 4px -2px rgba(15, 23, 42, 0.03) !important;
 }
 
-html.light .bg-slate-900\/80,
-html.light .bg-slate-900\/90,
-html.light .bg-slate-900\/95 {
-  background-color: rgba(255, 255, 255, 0.94) !important;
+html.light .session-card:hover,
+html.light .order-card:hover,
+html.light .spotlight-card:hover {
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 10px 25px -4px rgba(15, 23, 42, 0.08), 0 4px 6px -2px rgba(15, 23, 42, 0.04) !important;
 }
 
-html.light .bg-slate-800,
-html.light .bg-slate-800\/90,
-html.light .bg-slate-800\/80,
-html.light .bg-slate-800\/60,
+/* Soft Spotlight blend in light mode */
+html.light .spotlight-overlay {
+  opacity: 0.55 !important;
+  mix-blend-mode: multiply;
+}
+
+/* Recessed wells, empty state boxes, and inner utility surfaces */
+html.light .border-dashed {
+  border-color: #cbd5e1 !important;
+  background-color: #f8fafc !important;
+}
+
 html.light .bg-slate-800\/50,
 html.light .bg-slate-800\/40,
-html.light .bg-slate-800\/30 {
+html.light .bg-slate-800\/30,
+html.light .bg-slate-900\/50 {
   background-color: #f1f5f9 !important;
 }
 
-html.light .bg-slate-700,
-html.light .bg-slate-700\/50,
-html.light .bg-slate-700\/60,
-html.light .bg-slate-700\/80,
-html.light .bg-slate-700\/90 {
-  background-color: #e2e8f0 !important;
+/* Modals, Bottom Sheets & Dialogs */
+html.light [role="dialog"] > div,
+html.light .bg-slate-900 {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.16) !important;
 }
 
-/* Modal and dialog backdrops in light mode */
+html.light [role="dialog"] > div .border-b,
+html.light [role="dialog"] > div .border-t {
+  border-color: #e2e8f0 !important;
+}
+
 html.light .bg-black\/80,
 html.light .bg-black\/85,
 html.light .bg-slate-950\/80 {
-  background-color: rgba(15, 23, 42, 0.45) !important;
+  background-color: rgba(15, 23, 42, 0.38) !important;
+  backdrop-filter: blur(6px) !important;
 }
 
-/* Headings and text colors in light mode */
+/* Mobile sheet grab handle */
+html.light .bg-slate-700.rounded-full {
+  background-color: #cbd5e1 !important;
+}
+
+/* Sticky Header & Session Tabs */
+html.light .sticky.top-0 {
+  background-color: rgba(248, 250, 252, 0.9) !important;
+  backdrop-filter: blur(16px) !important;
+}
+
+html.light .sticky.top-0 .grid {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04) !important;
+}
+
+html.light .sticky.top-0 button.text-slate-400 {
+  color: #64748b !important;
+}
+
+html.light .sticky.top-0 button.text-slate-400:hover {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+html.light .sticky.top-0 button span.bg-slate-700 {
+  background-color: #e2e8f0 !important;
+  color: #475569 !important;
+}
+
+/* Bottom Navigation Bar */
+html.light nav[aria-label="Bottom Navigation"] {
+  background-color: rgba(255, 255, 255, 0.92) !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 -4px 20px rgba(15, 23, 42, 0.05) !important;
+  backdrop-filter: blur(16px) !important;
+}
+
+/* Typography & Headings */
 html.light h1,
 html.light h2,
 html.light h3,
@@ -185,14 +245,14 @@ html.light .text-slate-300 {
 }
 
 html.light .text-slate-400 {
-  color: #64748b !important;
+  color: #475569 !important;
 }
 
 html.light .text-slate-500 {
-  color: #94a3b8 !important;
+  color: #64748b !important;
 }
 
-/* Borders in light mode */
+/* Universal Borders in light mode */
 html.light .border-slate-800,
 html.light .border-slate-800\/80,
 html.light .border-slate-700,
@@ -203,7 +263,7 @@ html.light .border-slate-700\/50 {
   border-color: #e2e8f0 !important;
 }
 
-/* Inputs, Selects, and Forms */
+/* Form Inputs, Selects & Placeholders */
 html.light input[type="text"],
 html.light input[type="number"],
 html.light select,
@@ -213,49 +273,260 @@ html.light textarea {
   border-color: #cbd5e1 !important;
 }
 
-html.light input::placeholder {
+html.light input:focus,
+html.light select:focus,
+html.light textarea:focus {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+}
+
+html.light input::placeholder,
+html.light textarea::placeholder {
   color: #94a3b8 !important;
 }
 
-/* Solid colored buttons preserve crisp white text in light mode */
+/* Action Buttons (Keep crisp white text on rich saturated colors) */
 html.light button.bg-blue-600,
 html.light button.bg-blue-500,
+html.light button.bg-blue-700,
 html.light button.bg-emerald-600,
 html.light button.bg-emerald-500,
-html.light button.bg-amber-600,
-html.light button.bg-amber-500,
 html.light button.bg-rose-600,
 html.light button.bg-rose-500,
+html.light button.bg-purple-600,
+html.light button[class*="from-blue-600"],
+html.light a[class*="from-blue-600"],
 html.light a.bg-blue-600,
-html.light a.bg-blue-500,
-html.light a.bg-emerald-600,
-html.light [class*="bg-blue-600"],
-html.light [class*="bg-emerald-600"],
-html.light [class*="bg-gradient-to"] {
+html.light a.bg-blue-500 {
   color: #ffffff !important;
 }
 
 html.light button.bg-blue-600 *,
 html.light button.bg-blue-500 *,
+html.light button.bg-blue-700 *,
 html.light button.bg-emerald-600 *,
 html.light button.bg-emerald-500 *,
 html.light button.bg-rose-600 *,
+html.light button.bg-rose-500 *,
+html.light button.bg-purple-600 *,
+html.light button[class*="from-blue-600"] *,
+html.light a[class*="from-blue-600"] *,
 html.light a.bg-blue-600 *,
-html.light [class*="bg-blue-600"] *,
-html.light [class*="bg-emerald-600"] *,
-html.light [class*="bg-gradient-to"] * {
+html.light a.bg-blue-500 * {
   color: #ffffff !important;
 }
 
-/* Bottom navigation bar in light mode */
-html.light nav[aria-label="Bottom Navigation"] {
-  background-color: rgba(255, 255, 255, 0.95) !important;
-  border-color: #e2e8f0 !important;
-  box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.05);
+/* Secondary & Neutral Buttons in light mode */
+html.light button.bg-slate-800,
+html.light button.bg-slate-700,
+html.light .bg-slate-800 button,
+html.light a.bg-slate-800 {
+  background-color: #f1f5f9 !important;
+  color: #1e293b !important;
+  border-color: #cbd5e1 !important;
 }
 
-/* Subtle shadows for cards in light mode */
-html.light .shadow-2xl,
-html.light .shadow-xl {
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04) !important;
+html.light button.bg-slate-800:hover,
+html.light button.bg-slate-700:hover,
+html.light a.bg-slate-800:hover {
+  background-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+/* Bill Tab: Grand Total Card in Light Mode */
+html.light .total-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%) !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 10px 25px -4px rgba(15, 23, 42, 0.08), 0 4px 10px -2px rgba(15, 23, 42, 0.04) !important;
+}
+
+html.light .total-card .text-white {
+  color: #0f172a !important;
+}
+
+html.light .total-card .text-slate-300 {
+  color: #334155 !important;
+}
+
+html.light .total-card .text-slate-400 {
+  color: #64748b !important;
+}
+
+html.light .total-card button.bg-slate-700 {
+  background-color: #e2e8f0 !important;
+  color: #1e293b !important;
+  border-color: #cbd5e1 !important;
+}
+
+html.light .total-card button.bg-slate-700:hover {
+  background-color: #cbd5e1 !important;
+}
+
+/* Status Badges & Accents */
+/* Emerald / Active / Open */
+html.light .bg-emerald-500\/10,
+html.light .bg-emerald-500\/15,
+html.light .bg-emerald-500\/20 {
+  background-color: #ecfdf5 !important;
+  border-color: #a7f3d0 !important;
+  color: #047857 !important;
+}
+
+html.light .text-emerald-400,
+html.light .text-emerald-300 {
+  color: #059669 !important;
+}
+
+html.light .bg-emerald-400 {
+  background-color: #059669 !important;
+}
+
+/* Rose / Closed / Delete */
+html.light .bg-rose-500\/10,
+html.light .bg-rose-500\/15,
+html.light .bg-rose-500\/20 {
+  background-color: #fef2f2 !important;
+  border-color: #fecaca !important;
+  color: #b91c1c !important;
+}
+
+html.light .text-rose-400,
+html.light .text-rose-300 {
+  color: #dc2626 !important;
+}
+
+/* Amber / Warning / Shared items */
+html.light .bg-amber-500\/10,
+html.light .bg-amber-500\/15,
+html.light .bg-amber-500\/20 {
+  background-color: #fffbeb !important;
+  border-color: #fde68a !important;
+  color: #b45309 !important;
+}
+
+html.light .text-amber-400,
+html.light .text-amber-300 {
+  color: #d97706 !important;
+}
+
+/* Blue / Info */
+html.light .bg-blue-500\/10,
+html.light .bg-blue-500\/15,
+html.light .bg-blue-500\/20 {
+  background-color: #eff6ff !important;
+  border-color: #bfdbfe !important;
+  color: #1d4ed8 !important;
+}
+
+html.light .text-blue-400,
+html.light .text-blue-300 {
+  color: #2563eb !important;
+}
+
+/* Scanner Button in Orders tab */
+html.light button[title*="Scanner"] {
+  background: #eff6ff !important;
+  border-color: #bfdbfe !important;
+  color: #1d4ed8 !important;
+}
+
+html.light button[title*="Scanner"]:hover {
+  background: #dbeafe !important;
+}
+
+html.light button[title*="Scanner"] svg {
+  color: #1d4ed8 !important;
+}
+
+/* ThemeToggle in Light Mode */
+html.light .theme-toggle-compact {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #334155 !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06) !important;
+}
+
+html.light .theme-toggle-compact:hover {
+  background-color: #f8fafc !important;
+}
+
+html.light .theme-toggle-segmented {
+  background-color: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+}
+
+html.light .theme-pill-light {
+  background-color: #ffffff !important;
+  color: #d97706 !important;
+  border-color: #fde68a !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08) !important;
+}
+
+html.light .theme-pill-dark {
+  background-color: #ffffff !important;
+  color: #2563eb !important;
+  border-color: #bfdbfe !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08) !important;
+}
+
+html.light .theme-pill-auto {
+  background-color: #ffffff !important;
+  color: #059669 !important;
+  border-color: #a7f3d0 !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08) !important;
+}
+
+/* Friend chips in CreateSessionForm */
+html.light .friend-chip-selected {
+  background-color: #eff6ff !important;
+  border-color: #3b82f6 !important;
+  color: #1e40af !important;
+  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.12) !important;
+}
+
+html.light .friend-chip-unselected {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+  color: #64748b !important;
+}
+
+/* Wizard / Modal Stepper controls & Selected participant cards */
+html.light .bg-blue-600\/20 {
+  background-color: #eff6ff !important;
+  border-color: #3b82f6 !important;
+  color: #1d4ed8 !important;
+}
+
+html.light .bg-blue-600\/20 span {
+  color: #1e3a8a !important;
+}
+
+html.light .bg-slate-800\/70,
+html.light .bg-slate-800\/80,
+html.light .bg-slate-800\/90 {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+html.light .bg-slate-900\/80,
+html.light .bg-slate-900\/90 {
+  background-color: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+}
+
+/* Modal Inner Stepper buttons */
+html.light .bg-slate-900 button.bg-slate-800 {
+  background-color: #e2e8f0 !important;
+  color: #1e293b !important;
+}
+
+/* Category Filter Tabs in Orders Modal & Admin */
+html.light .bg-blue-950\/40 {
+  background-color: #eff6ff !important;
+  border-color: #93c5fd !important;
+}
+
+/* Scanner progress track */
+html.light .bg-slate-800.rounded-full {
+  background-color: #e2e8f0 !important;
 }

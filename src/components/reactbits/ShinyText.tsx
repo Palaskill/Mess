@@ -19,13 +19,11 @@ export default function ShinyText({
 
   return (
     <span
-      className={`inline-block relative text-transparent bg-clip-text bg-gradient-to-r from-white via-white/40 to-white bg-[length:250%_100%] ${
+      className={`shiny-text inline-block relative text-transparent bg-clip-text bg-[length:250%_100%] ${
         disabled ? '' : 'animate-shine'
       } ${className}`}
       style={{
         animationDuration,
-        backgroundImage:
-          'linear-gradient(120deg, rgba(255, 255, 255, 0) 40%, rgba(255, 255, 255, 0.8) 50%, rgba(255, 255, 255, 0) 60%)',
       }}
     >
       {text}
@@ -37,6 +35,22 @@ export default function ShinyText({
           100% {
             background-position: -100% 0;
           }
+        }
+        .shiny-text {
+          background-image: linear-gradient(
+            120deg,
+            currentColor 30%,
+            rgba(255, 255, 255, 0.95) 50%,
+            currentColor 70%
+          );
+        }
+        :global(html.light) .shiny-text {
+          background-image: linear-gradient(
+            120deg,
+            currentColor 30%,
+            #2563eb 50%,
+            currentColor 70%
+          );
         }
         .animate-shine {
           animation: shine ${animationDuration} infinite linear;

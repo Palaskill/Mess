@@ -12,6 +12,7 @@ export interface ParsedReceiptItem {
 
 export interface ParsedReceiptResult {
   restaurant_name?: string;
+  currency?: string;
   items: ParsedReceiptItem[];
   subtotal?: number;
   tax?: number;
@@ -19,27 +20,45 @@ export interface ParsedReceiptResult {
   total?: number;
 }
 
-const PROMPT = `You are an expert OCR receipt scanner for restaurants, bars, and cafes.
+const PROMPT = `You are an expert OCR receipt scanner for restaurants, bars, and cafes worldwide.
 Analyze this photo of a restaurant/bar receipt/bill.
-Extract all individual items purchased, their quantities, and their unit prices.
+Extract all individual items purchased, their quantities, and their UNIT prices.
+
+CRITICAL RULES FOR PRICE EXTRACTION:
+- Many receipts show a "Montant" or "Amount" column that is the LINE TOTAL (Qty × Unit Price). You MUST divide by quantity to get unit_price.
+  Example: "29  CELTIA BOUTEILLE  72,500" → quantity=29, unit_price=2.500 (72500 / 29 = 2500, i.e. 2.500 in TND).
+  Example: "3   CREPE SPECIALE    12,000" → quantity=3, unit_price=4.000 (12000 / 3 = 4000, i.e. 4.000 in TND).
+  Example: "7   BECK'S BOUTEILLE  21,000" → quantity=7, unit_price=3.000 (21000 / 7 = 3000, i.e. 3.000 in TND).
+  Example: "1   PIZZA NEPTUNE      7,000" → quantity=1, unit_price=7.000.
+- Commas may be used as decimal separators (European/Tunisian format): "7,000" means 7.000, "72,500" means 72.500, "180,150" means 180.150.
+- In Tunisian Dinar (TND), 1 Dinar = 1000 Millimes. Prices like "7,000" = 7.000 TND, "2,500" = 2.500 TND, "180,150" = 180.150 TND.
+
+CURRENCY DETECTION:
+- Detect the currency from the receipt context (country, language, venue name).
+- If the receipt is from Tunisia, North Africa, or shows Tunisian brands (Celtia, Boukha, etc.), use "TND".
+- If there's a $ symbol, use "USD". If € use "EUR". If £ use "GBP".
+- Otherwise infer from context. Default to "TND" if uncertain and the receipt appears North African.
+- Return the detected currency in the "currency" field.
 
 For each item:
-1. "name": clean, readable item name in its original language (e.g. "Heineken 33cl", "Burger Cheese", "Fromage Chèvre", "Pizza Margherita"). Remove any internal cashier codes or tax symbols like (*, #, T1, TVA).
-2. "quantity": integer count of this item (minimum 1). If an item appears as "2x Burger 12.00", quantity is 2 and unit_price is 12.00 (or if 24.00 total, unit_price is 12.00).
-3. "unit_price": price for ONE unit as a float/number (e.g. 8.50). Always unit price, not line total.
-4. "category": determine whether this item is "drinks" (beer, wine, cocktails, water, coffee, soda), "food" (burgers, pizza, cheese, meat, dishes, dessert, tapas), or "other".
-5. "split_type": set to "individual" for drinks, personal coffee/soda, single dishes; set to "shared" for shared plates (cheese platters, charcuterie, pizza to share, tapas, nachos, large wine bottles).
+1. "name": clean, readable item name in its original language (e.g. "Celtia Bouteille", "Pizza Neptune", "Beck's Bouteille", "Café Expresse"). Remove internal codes, tax symbols (*, #, T1, TVA).
+2. "quantity": integer count (minimum 1).
+3. "unit_price": price for ONE SINGLE unit as a float (e.g. 2.5, not the line total). ALWAYS divide line total by quantity.
+4. "category": "drinks" (beer, wine, cocktails, water, coffee, soda, energy drinks), "food" (pizza, crêpe, burger, dishes, desserts), or "other" (nuts/fruits secs like amande/pistache/cajou, cigarettes, shisha, hookah).
+5. "split_type": "individual" for personal drinks/dishes; "shared" for platters, shared appetizers, bottles of spirits shared among the table, large shared items.
 
 Also extract:
-- "restaurant_name": name of the venue if visible, else null
-- "subtotal": subtotal amount before tax/tip if visible
-- "tax": tax/TVA amount if visible
-- "tip": tip/pourboire if visible
-- "total": final total amount of the bill (float/number)
+- "restaurant_name": name of the venue if visible (e.g. "COIAG La Goulette"), else null
+- "currency": detected currency code ("TND", "EUR", "USD", "GBP", etc.)
+- "subtotal": subtotal before tax/tip if visible, else null
+- "tax": tax/TVA amount if visible, else null
+- "tip": tip/pourboire if visible, else null
+- "total": final total amount as a float (e.g. 180.15 for "180,150" in TND)
 
 Respond ONLY with a valid JSON object matching this schema:
 {
   "restaurant_name": "string or null",
+  "currency": "TND",
   "items": [
     {
       "name": "string",
@@ -88,8 +107,14 @@ export async function scanReceiptWithGemini(
 
     const validMimeType = mimeType || 'image/jpeg';
 
-    // Try Gemini 2.5 Flash, Gemini 1.5 Flash, and Gemini 1.5 Pro
-    const models = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
+    // Try latest models first (gemini-flash-latest automatically points to the newest stable flash e.g. 3.8/2.5)
+    const models = [
+      'gemini-flash-latest',
+      'gemini-3.8-flash',
+      'gemini-3.5-flash',
+      'gemini-2.5-flash-lite',
+      'gemini-pro-latest',
+    ];
     let lastError = '';
 
     for (const model of models) {
@@ -111,7 +136,6 @@ export async function scanReceiptWithGemini(
             },
           ],
           generationConfig: {
-            response_mime_type: 'application/json',
             temperature: 0.1,
           },
         };
@@ -132,7 +156,9 @@ export async function scanReceiptWithGemini(
         }
 
         const json = await res.json();
-        const candidateText = json?.candidates?.[0]?.content?.parts?.[0]?.text;
+        const parts = json?.candidates?.[0]?.content?.parts || [];
+        const textPart = parts.find((p: any) => p.text && !p.thought) || parts[0];
+        const candidateText = textPart?.text;
 
         if (!candidateText) {
           lastError = 'Aucun texte extrait par Gemini Vision.';
@@ -157,6 +183,13 @@ export async function scanReceiptWithGemini(
           };
         }
 
+        // Detect currency
+        const detectedCurrency = parsed.currency || 'TND';
+
+        // Use 3 decimal places for TND (millimes), 2 for others
+        const isTND = detectedCurrency.toUpperCase() === 'TND';
+        const roundFactor = isTND ? 1000 : 100;
+
         const sanitizedItems: ParsedReceiptItem[] = parsed.items
           .filter((item) => item && typeof item.name === 'string' && item.name.trim().length > 0)
           .map((item, idx) => {
@@ -165,20 +198,20 @@ export async function scanReceiptWithGemini(
             if (isNaN(unitPrice) || unitPrice < 0) {
               unitPrice = 0;
             }
-            unitPrice = Math.round(unitPrice * 100) / 100;
+            unitPrice = Math.round(unitPrice * roundFactor) / roundFactor;
 
             const category: 'drinks' | 'food' | 'other' =
               item.category === 'drinks' || item.category === 'food' || item.category === 'other'
                 ? item.category
-                : /biere|beer|vin|wine|cocktail|cola|cafe|coffee|water|eau/i.test(item.name)
+                : /biere|beer|celtia|beck|heineken|vin|wine|cocktail|cola|cafe|coffee|water|eau|soda|vodka|whisky|gin|rhum|rum|tequila|jus|juice/i.test(item.name)
                 ? 'drinks'
-                : 'food';
+                : /pizza|burger|crep|sandwich|plat|salade|viande|poulet|poisson|grillad|entrecot|steak|pates|couscous|tajine/i.test(item.name)
+                ? 'food'
+                : 'other';
 
             const split_type: 'individual' | 'shared' =
               item.split_type === 'shared' || item.split_type === 'individual'
                 ? item.split_type
-                : category === 'food'
-                ? 'shared'
                 : 'individual';
 
             return {
@@ -195,11 +228,12 @@ export async function scanReceiptWithGemini(
           success: true,
           data: {
             restaurant_name: parsed.restaurant_name || undefined,
+            currency: detectedCurrency,
             items: sanitizedItems,
-            subtotal: parsed.subtotal ? Math.round(parsed.subtotal * 100) / 100 : undefined,
-            tax: parsed.tax ? Math.round(parsed.tax * 100) / 100 : undefined,
-            tip: parsed.tip ? Math.round(parsed.tip * 100) / 100 : undefined,
-            total: parsed.total ? Math.round(parsed.total * 100) / 100 : undefined,
+            subtotal: parsed.subtotal ? Math.round(parsed.subtotal * roundFactor) / roundFactor : undefined,
+            tax: parsed.tax ? Math.round(parsed.tax * roundFactor) / roundFactor : undefined,
+            tip: parsed.tip ? Math.round(parsed.tip * roundFactor) / roundFactor : undefined,
+            total: parsed.total ? Math.round(parsed.total * roundFactor) / roundFactor : undefined,
           },
         };
       } catch (modelErr: any) {

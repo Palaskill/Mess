@@ -27,6 +27,7 @@ import {
   ParsedReceiptItem,
   ParsedReceiptResult,
 } from '@/lib/gemini';
+import { getCurrencySymbol } from '@/lib/utils';
 import { CreateBatchOrderItem } from '@/lib/actions';
 import { Participant } from '@/types';
 
@@ -51,6 +52,7 @@ export default function ReceiptScannerModal({
   const [isServerConfigured, setIsServerConfigured] = useState<boolean>(false);
   const [scannedResult, setScannedResult] = useState<ParsedReceiptResult | null>(null);
   const [editedItems, setEditedItems] = useState<ParsedReceiptItem[]>([]);
+  const [currencySymbol, setCurrencySymbol] = useState<string>('DT');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -152,6 +154,7 @@ export default function ReceiptScannerModal({
 
         if (res.data && res.data.items.length > 0) {
           setScannedResult(res.data);
+          setCurrencySymbol(getCurrencySymbol(res.data.currency));
           const initialItems: ParsedReceiptItem[] = res.data.items.map((it, idx) => ({
             ...it,
             id: `item-${Date.now()}-${idx}`,
@@ -201,6 +204,7 @@ export default function ReceiptScannerModal({
         }
         if (res.data && res.data.items.length > 0) {
           setScannedResult(res.data);
+          setCurrencySymbol(getCurrencySymbol(res.data.currency));
           const initialItems: ParsedReceiptItem[] = res.data.items.map((it, idx) => ({
             ...it,
             id: `item-${Date.now()}-${idx}`,
@@ -728,7 +732,7 @@ export default function ReceiptScannerModal({
                       <div className="flex items-center gap-2 text-xs text-slate-400 mt-0.5">
                         <span>Qté : <strong className="text-white">{currentItem.quantity}</strong></span>
                         <span>•</span>
-                        <span>Prix : <strong className="text-emerald-400">${currentItem.unit_price.toFixed(2)}</strong></span>
+                        <span>Prix : <strong className="text-emerald-400">{currentItem.unit_price.toFixed(3)} {currencySymbol}</strong></span>
                       </div>
                     </div>
                   </div>
@@ -737,7 +741,7 @@ export default function ReceiptScannerModal({
                   <div className="text-right shrink-0">
                     <span className="text-[10px] uppercase font-bold text-slate-400 block">Total ligne</span>
                     <span className="text-lg font-black text-emerald-400">
-                      ${(currentItem.quantity * currentItem.unit_price).toFixed(2)}
+                      {(currentItem.quantity * currentItem.unit_price).toFixed(3)} {currencySymbol}
                     </span>
                   </div>
                 </div>
@@ -843,10 +847,10 @@ export default function ReceiptScannerModal({
                               </span>
                               {isSelected && currentItem.split_type === 'shared' && (
                                 <span className="block text-[10px] text-emerald-400 font-semibold">
-                                  ${(
+                                  {(
                                     (currentItem.quantity * currentItem.unit_price) /
                                     (assignments.length || 1)
-                                  ).toFixed(2)}
+                                  ).toFixed(3)} {currencySymbol}
                                 </span>
                               )}
                             </div>
@@ -926,7 +930,7 @@ export default function ReceiptScannerModal({
                 <div className="text-right">
                   <span className="text-slate-400 block text-[11px]">Total ticket détecté</span>
                   <span className="font-black text-emerald-400 text-base">
-                    ${calculatedTotal.toFixed(2)}
+                    {calculatedTotal.toFixed(3)} {currencySymbol}
                   </span>
                 </div>
               </div>
@@ -1014,15 +1018,15 @@ export default function ReceiptScannerModal({
                         {/* Unit Price Input */}
                         <div className="flex items-center gap-1">
                           <span className="text-[11px] text-slate-400">Prix unitaire :</span>
-                          <div className="relative w-20">
-                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs">$</span>
+                          <div className="relative w-24">
+                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 text-[10px]">{currencySymbol}</span>
                             <input
                               type="number"
-                              step="0.01"
+                              step="0.001"
                               min="0"
                               value={item.unit_price}
                               onChange={(e) => handleUpdateItem(index, { unit_price: parseFloat(e.target.value) || 0 })}
-                              className="w-full pl-5 pr-1.5 py-1 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs font-bold text-right focus:outline-none focus:border-blue-500"
+                              className="w-full pl-2 pr-7 py-1 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs font-bold text-right focus:outline-none focus:border-blue-500"
                             />
                           </div>
                         </div>

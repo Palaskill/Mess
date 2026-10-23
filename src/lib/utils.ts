@@ -20,9 +20,33 @@ export function timeAgo(date: string | Date): string {
   return `${years}y ago`;
 }
 
+// Currency symbol mapping
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  TND: 'DT',
+  EUR: '€',
+  USD: '$',
+  GBP: '£',
+  MAD: 'DH',
+  DZD: 'DA',
+  SAR: 'SAR',
+  AED: 'AED',
+  QAR: 'QAR',
+  KWD: 'KWD',
+  EGP: 'E£',
+};
+
+export function getCurrencySymbol(code?: string): string {
+  if (!code) return 'DT';
+  return CURRENCY_SYMBOLS[code.toUpperCase()] || code;
+}
+
 /**
- * Format currency amount with 2 decimal places
+ * Format currency amount with appropriate decimal places (3 for TND/DT, 2 for others)
  */
-export function formatCurrency(amount: number): string {
-  return `$${(amount || 0).toFixed(2)}`;
+export function formatCurrency(amount: number, currency = 'DT'): string {
+  const val = amount || 0;
+  if (currency === 'DT' || currency === 'TND') {
+    return `${val.toFixed(3)} DT`;
+  }
+  return `${val.toFixed(2)} ${currency}`;
 }

@@ -107,13 +107,12 @@ export async function scanReceiptWithGemini(
 
     const validMimeType = mimeType || 'image/jpeg';
 
-    // Try latest models first (gemini-flash-latest automatically points to the newest stable flash e.g. 3.8/2.5)
+    // Ultra-fast lite models first (< 2.5s response time without heavy chain-of-thought delay)
     const models = [
+      'gemini-3.5-flash-lite',
+      'gemini-flash-lite-latest',
       'gemini-flash-latest',
       'gemini-3.8-flash',
-      'gemini-3.5-flash',
-      'gemini-2.5-flash-lite',
-      'gemini-pro-latest',
     ];
     let lastError = '';
 
@@ -140,13 +139,18 @@ export async function scanReceiptWithGemini(
           },
         };
 
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
+
         const res = await fetch(url, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(payload),
+          signal: controller.signal,
         });
+        clearTimeout(timeoutId);
 
         if (!res.ok) {
           const errBody = await res.text();

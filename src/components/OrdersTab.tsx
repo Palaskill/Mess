@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useRef } from 'react';
 import {
   Plus,
   Trash2,
@@ -15,6 +15,8 @@ import {
   CheckCircle2,
   Camera,
 } from 'lucide-react';
+import gsap from 'gsap';
+import { useGSAP } from '@gsap/react';
 import {
   Order,
   Participant,
@@ -32,6 +34,9 @@ import {
   toggleSharedAssignment,
 } from '@/lib/actions';
 import { getUnassignedQuantity } from '@/lib/calculations';
+import { formatCurrency } from '@/lib/utils';
+import SpotlightCard from '@/components/reactbits/SpotlightCard';
+import ShinyText from '@/components/reactbits/ShinyText';
 
 interface OrdersTabProps {
   sessionId: string;
@@ -91,6 +96,21 @@ export default function OrdersTab({
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const ordersContainerRef = useRef<HTMLDivElement>(null);
+
+  // GSAP animation for orders entrance
+  useGSAP(
+    () => {
+      gsap.from('.order-card', {
+        y: 18,
+        opacity: 0,
+        duration: 0.4,
+        stagger: 0.05,
+        ease: 'power2.out',
+      });
+    },
+    { scope: ordersContainerRef, dependencies: [orders.length] }
+  );
 
   // Active menu items
   const activeMenu = menuItems.filter((i) => i.is_active);
@@ -809,7 +829,7 @@ export default function OrdersTab({
           )}
         </div>
       ) : (
-        <div className="grid gap-3.5">
+        <div ref={ordersContainerRef} className="grid gap-3.5">
           {[...orders]
             .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
             .map((order) => {
@@ -823,9 +843,10 @@ export default function OrdersTab({
             const perSharerPrice = sharersCount > 0 ? totalOrderPrice / sharersCount : totalOrderPrice;
 
             return (
-              <div
+              <SpotlightCard
                 key={order.id}
-                className="rounded-2xl bg-slate-800/90 border border-slate-700/80 p-4 shadow-lg shadow-black/20 backdrop-blur-sm transition-all"
+                spotlightColor={isShared ? 'rgba(245, 158, 11, 0.15)' : 'rgba(59, 130, 246, 0.15)'}
+                className="order-card rounded-2xl bg-slate-800/90 border border-slate-700/80 p-4 shadow-lg shadow-black/20 backdrop-blur-sm transition-all"
               >
                 {/* Order Top Bar: Item, Qty, Price, Split type */}
                 <div className="flex items-start justify-between gap-3">
@@ -844,7 +865,7 @@ export default function OrdersTab({
                       </div>
                       <div className="flex items-center gap-2 text-xs text-slate-400 mt-0.5">
                         <span className={isPendingWeight ? 'text-amber-400 font-bold' : 'text-emerald-400 font-semibold'}>
-                          {isPendingWeight ? 'À peser ($0)' : `$${Number(order.unit_price).toFixed(2)} ea`}
+                          {isPendingWeight ? 'À peser (0 DT)' : formatCurrency(Number(order.unit_price))}
                         </span>
                         <span>•</span>
                         <span
@@ -862,7 +883,7 @@ export default function OrdersTab({
 
                   <div className="flex items-center gap-1.5">
                     <span className="text-base font-black text-white mr-1">
-                      ${totalOrderPrice.toFixed(2)}
+                      {formatCurrency(totalOrderPrice)}
                     </span>
                     {!isClosed && (
                       <button
@@ -920,11 +941,11 @@ export default function OrdersTab({
                             </span>
                           ) : sharersCount === 1 ? (
                             <span className="text-blue-300 font-bold">
-                              👤 1 person eating (pays full ${totalOrderPrice.toFixed(2)})
+                              👤 1 person eating (pays full {formatCurrency(totalOrderPrice)})
                             </span>
                           ) : (
                             <span className="text-emerald-400 font-bold">
-                              🍕 Split {sharersCount} ways (${perSharerPrice.toFixed(2)} each)
+                              🍕 Split {sharersCount} ways ({formatCurrency(perSharerPrice)} each)
                             </span>
                           )}
                         </div>
@@ -958,7 +979,7 @@ export default function OrdersTab({
                               <span>{p.name}</span>
                               {isSharing && (
                                 <span className="text-[11px] bg-blue-700/90 rounded-full px-1.5 py-0.5 font-bold">
-                                  ${perSharerPrice.toFixed(2)}
+                                  {formatCurrency(perSharerPrice)}
                                 </span>
                               )}
                             </button>
@@ -1095,7 +1116,7 @@ export default function OrdersTab({
                     </div>
                   )}
                 </div>
-              </div>
+              </SpotlightCard>
             );
           })}
         </div>

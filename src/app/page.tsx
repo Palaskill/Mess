@@ -1,8 +1,9 @@
 import { Beer, Sparkles } from 'lucide-react';
 import { getSessions } from '@/lib/actions';
-import SessionCard from '@/components/SessionCard';
+import SessionsList from '@/components/SessionsList';
 import CreateSessionForm from '@/components/CreateSessionForm';
 import ThemeToggle from '@/components/ThemeToggle';
+import ShinyText from '@/components/reactbits/ShinyText';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,7 +46,7 @@ export default async function HomePage() {
               {openSessionsCount > 0 && (
                 <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 font-medium border border-emerald-500/30 flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  {openSessionsCount} Active now
+                  <ShinyText text={`${openSessionsCount} Active now`} className="text-emerald-300 font-bold" />
                 </span>
               )}
             </div>
@@ -85,9 +86,7 @@ export default async function HomePage() {
                 </span>
               </div>
 
-              {sessions.map((session) => (
-                <SessionCard key={session.id} session={session} />
-              ))}
+              <SessionsList sessions={sessions} />
             </div>
           )}
         </section>

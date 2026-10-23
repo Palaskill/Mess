@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition, useMemo } from 'react';
+import { useState, useTransition, useMemo, useRef } from 'react';
 import {
   Share2,
   Check,
@@ -10,7 +10,10 @@ import {
   Scale,
   AlertCircle,
   Copy,
+  Sparkles,
 } from 'lucide-react';
+import gsap from 'gsap';
+import { useGSAP } from '@gsap/react';
 import { Order, Participant, Assignment } from '@/types';
 import {
   calculateBills,
@@ -18,6 +21,10 @@ import {
   calculateUnassigned,
 } from '@/lib/calculations';
 import { closeSession } from '@/lib/actions';
+import { formatCurrency } from '@/lib/utils';
+import SpotlightCard from '@/components/reactbits/SpotlightCard';
+import ShinyText from '@/components/reactbits/ShinyText';
+import CountUp from '@/components/reactbits/CountUp';
 
 interface BillTabProps {
   sessionId: string;
@@ -40,6 +47,7 @@ export default function BillTab({
 }: BillTabProps) {
   const [copied, setCopied] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Tip state: always fixed amount
   const [tipFixed, setTipFixed] = useState('');
@@ -50,6 +58,27 @@ export default function BillTab({
   const total = calculateTotal(orders);
   const unassignedAmount = calculateUnassigned(orders, assignments);
   const pendingWeightOrders = orders.filter((o) => Number(o.unit_price) === 0);
+
+  // GSAP Entrance Animations
+  useGSAP(
+    () => {
+      gsap.from('.bill-card', {
+        y: 20,
+        opacity: 0,
+        duration: 0.45,
+        stagger: 0.06,
+        ease: 'power2.out',
+      });
+      gsap.from('.total-card', {
+        scale: 0.96,
+        opacity: 0,
+        duration: 0.5,
+        delay: 0.1,
+        ease: 'back.out(1.2)',
+      });
+    },
+    { scope: containerRef, dependencies: [orders, assignments, participants] }
+  );
 
   // Tip amount is always the parsed fixed amount
   const tipAmount = useMemo(() => {
@@ -119,33 +148,33 @@ export default function BillTab({
 
   // Generate formatted text breakdown
   const generateSummaryText = () => {
-    let text = `🍻 *${sessionName} — Bar Tab Split*\n\n`;
+    let text = `🍻 *${sessionName} — Addition & Partage*\n\n`;
 
     finalBills.forEach((b) => {
-      text += `👤 *${b.participant.name}*: $${b.grandTotal.toFixed(2)}`;
+      text += `👤 *${b.participant.name}*: ${formatCurrency(b.grandTotal)}`;
       if (b.tipAmount > 0) {
-        text += ` (incl. $${b.tipAmount.toFixed(2)} tip)`;
+        text += ` (dont ${formatCurrency(b.tipAmount)} pourboire)`;
       }
       text += '\n';
       b.items.forEach((item) => {
-        text += `   • ${item.label} ($${item.amount.toFixed(2)})\n`;
+        text += `   • ${item.label} (${formatCurrency(item.amount)})\n`;
       });
       if (b.tipAmount > 0) {
-        text += `   • 💵 Tip ($${b.tipAmount.toFixed(2)})\n`;
+        text += `   • 💵 Pourboire (${formatCurrency(b.tipAmount)})\n`;
       }
       text += '\n';
     });
 
     text += `──────────────\n`;
-    text += `💰 *Subtotal*: $${total.toFixed(2)}\n`;
+    text += `💰 *Sous-total*: ${formatCurrency(total)}\n`;
     if (tipAmount > 0) {
-      text += `💵 *Tip*: $${tipAmount.toFixed(2)}\n`;
+      text += `💵 *Pourboire*: ${formatCurrency(tipAmount)}\n`;
     }
-    text += `🧾 *Grand Total*: $${grandTotalWithTip.toFixed(2)}\n`;
+    text += `🧾 *Grand Total*: ${formatCurrency(grandTotalWithTip)}\n`;
     if (unassignedAmount > 0) {
-      text += `⚠️ *Unassigned Items*: $${unassignedAmount.toFixed(2)}\n`;
+      text += `⚠️ *Non affecté sur la table*: ${formatCurrency(unassignedAmount)}\n`;
     }
-    text += `\nShared via MEss 🍺`;
+    text += `\nPartagé via MEss 🍺`;
     return text;
   };
 
@@ -182,7 +211,7 @@ export default function BillTab({
   };
 
   return (
-    <div className="space-y-5">
+    <div ref={containerRef} className="space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -262,7 +291,7 @@ export default function BillTab({
                 </span>
                 <span className="text-[11px] text-slate-400">
                   {tipAmount > 0
-                    ? `$${tipAmount.toFixed(2)} tip • ${tipParticipantIds.length} friend${tipParticipantIds.length !== 1 ? 's' : ''} splitting`
+                    ? `${formatCurrency(tipAmount)} tip • ${tipParticipantIds.length} friend${tipParticipantIds.length !== 1 ? 's' : ''} splitting`
                     : 'Optional gratuity for the bar staff'}
                 </span>
               </div>
@@ -271,7 +300,7 @@ export default function BillTab({
             <div className="flex items-center gap-2 shrink-0">
               {tipAmount > 0 && (
                 <span className="text-xs font-extrabold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                  +${tipAmount.toFixed(2)}
+                  +{formatCurrency(tipAmount)}
                 </span>
               )}
               <span className={`text-slate-400 text-xs transition-transform ${showTipSection ? 'rotate-180' : ''}`}>
@@ -437,9 +466,9 @@ export default function BillTab({
           {finalBills
             .sort((a, b) => b.grandTotal - a.grandTotal)
             .map((bill) => (
-            <div
+            <SpotlightCard
               key={bill.participant.id}
-              className="p-4 rounded-2xl bg-slate-800/90 border border-slate-700/80 shadow-md space-y-3"
+              className="bill-card p-4 rounded-2xl bg-slate-800/90 border border-slate-700/80 shadow-md space-y-3"
             >
               {/* Person Header & Total */}
               <div className="flex items-center justify-between">
@@ -462,12 +491,15 @@ export default function BillTab({
                 </div>
 
                 <div className="text-right">
-                  <span className="text-xl font-black text-emerald-400">
-                    ${bill.grandTotal.toFixed(2)}
-                  </span>
+                  <CountUp
+                    to={bill.grandTotal}
+                    decimals={3}
+                    currency="DT"
+                    className="text-xl font-black text-emerald-400 block"
+                  />
                   {bill.tipAmount > 0 && (
                     <span className="block text-[10px] text-slate-400">
-                      incl. ${bill.tipAmount.toFixed(2)} tip
+                      incl. {formatCurrency(bill.tipAmount)} tip
                     </span>
                   )}
                 </div>
@@ -485,7 +517,7 @@ export default function BillTab({
                         {item.label}
                       </span>
                       <span className="font-semibold text-slate-400 shrink-0">
-                        ${item.amount.toFixed(2)}
+                        {formatCurrency(item.amount)}
                       </span>
                     </div>
                   ))}
@@ -495,7 +527,7 @@ export default function BillTab({
                         <span>💵</span> Tip
                       </span>
                       <span className="font-semibold text-emerald-400 shrink-0">
-                        ${bill.tipAmount.toFixed(2)}
+                        {formatCurrency(bill.tipAmount)}
                       </span>
                     </div>
                   )}
@@ -505,16 +537,19 @@ export default function BillTab({
                   No items assigned yet
                 </div>
               )}
-            </div>
+            </SpotlightCard>
           ))}
         </div>
       )}
 
       {/* ==================== GRAND TOTAL CARD ==================== */}
-      <div className="p-5 rounded-3xl bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700 shadow-2xl space-y-3">
+      <SpotlightCard
+        spotlightColor="rgba(16, 185, 129, 0.15)"
+        className="total-card p-5 rounded-3xl bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700 shadow-2xl space-y-3"
+      >
         <div className="flex items-center justify-between text-slate-300 text-sm">
           <span>Subtotal ({orders.length} orders)</span>
-          <span className="font-bold">${total.toFixed(2)}</span>
+          <span className="font-bold">{formatCurrency(total)}</span>
         </div>
 
         {tipAmount > 0 && (
@@ -523,25 +558,28 @@ export default function BillTab({
               <span>💵</span>
               <span>Tip</span>
             </span>
-            <span className="font-bold">+${tipAmount.toFixed(2)}</span>
+            <span className="font-bold">+{formatCurrency(tipAmount)}</span>
           </div>
         )}
 
         {unassignedAmount > 0 && (
           <div className="flex items-center justify-between text-amber-400 text-xs font-semibold">
             <span>⚠️ Unassigned on table</span>
-            <span>${unassignedAmount.toFixed(2)}</span>
+            <span>{formatCurrency(unassignedAmount)}</span>
           </div>
         )}
 
         <div className="pt-3 border-t border-slate-700/80 flex items-center justify-between">
           <div>
             <span className="text-xs uppercase tracking-wider font-extrabold text-slate-400 block">
-              Grand Total
+              <ShinyText text="Grand Total" />
             </span>
-            <span className="text-2xl font-black text-white">
-              ${grandTotalWithTip.toFixed(2)}
-            </span>
+            <CountUp
+              to={grandTotalWithTip}
+              decimals={3}
+              currency="DT"
+              className="text-2xl sm:text-3xl font-black text-white block mt-0.5"
+            />
           </div>
 
           {!isClosed ? (
@@ -560,7 +598,7 @@ export default function BillTab({
             </span>
           )}
         </div>
-      </div>
+      </SpotlightCard>
     </div>
   );
 }

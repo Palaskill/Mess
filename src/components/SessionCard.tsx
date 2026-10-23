@@ -6,6 +6,7 @@ import { Users, Trash2, ArrowRight } from 'lucide-react';
 import { Session } from '@/types';
 import { deleteSession } from '@/lib/actions';
 import { timeAgo } from '@/lib/utils';
+import SpotlightCard from '@/components/reactbits/SpotlightCard';
 
 interface SessionCardProps {
   session: Session & {
@@ -58,7 +59,7 @@ export default function SessionCard({ session }: SessionCardProps) {
   };
 
   return (
-    <div
+    <SpotlightCard
       onClick={() => router.push(`/session/${session.id}`)}
       role="button"
       tabIndex={0}
@@ -67,7 +68,8 @@ export default function SessionCard({ session }: SessionCardProps) {
           router.push(`/session/${session.id}`);
         }
       }}
-      className={`group relative block rounded-2xl bg-slate-800/90 border border-slate-700/80 p-4 sm:p-5 shadow-lg shadow-black/20 backdrop-blur-sm transition-all duration-200 hover:border-slate-500 hover:bg-slate-800 active:scale-[0.99] cursor-pointer touch-manipulation ${
+      spotlightColor={isOpen ? 'rgba(16, 185, 129, 0.18)' : 'rgba(59, 130, 246, 0.15)'}
+      className={`session-card group relative block rounded-2xl bg-slate-800/90 border border-slate-700/80 p-4 sm:p-5 shadow-lg shadow-black/20 backdrop-blur-sm transition-all duration-200 hover:border-slate-500 hover:bg-slate-800 active:scale-[0.99] cursor-pointer touch-manipulation ${
         isDeleting || isPending ? 'opacity-50 pointer-events-none' : ''
       }`}
     >
@@ -158,6 +160,6 @@ export default function SessionCard({ session }: SessionCardProps) {
           <ArrowRight className="w-3.5 h-3.5" />
         </span>
       </div>
-    </div>
+    </SpotlightCard>
   );
 }

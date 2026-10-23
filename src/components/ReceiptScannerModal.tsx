@@ -30,6 +30,10 @@ import {
 import { getCurrencySymbol } from '@/lib/utils';
 import { CreateBatchOrderItem } from '@/lib/actions';
 import { Participant } from '@/types';
+import gsap from 'gsap';
+import SpotlightCard from '@/components/reactbits/SpotlightCard';
+import ShinyText from '@/components/reactbits/ShinyText';
+import CountUp from '@/components/reactbits/CountUp';
 
 interface ReceiptScannerModalProps {
   isOpen: boolean;
@@ -58,6 +62,18 @@ export default function ReceiptScannerModal({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  const wizardCardRef = useRef<HTMLDivElement>(null);
+
+  // GSAP micro-animation when moving between articles in wizard
+  useEffect(() => {
+    if (step === 'wizard' && wizardCardRef.current) {
+      gsap.fromTo(
+        wizardCardRef.current,
+        { scale: 0.96, opacity: 0.5, y: 6 },
+        { scale: 1, opacity: 1, y: 0, duration: 0.25, ease: 'power2.out' }
+      );
+    }
+  }, [wizardIndex, step]);
 
   // Load saved Gemini API key from localStorage and verify server status
   useEffect(() => {
@@ -704,76 +720,81 @@ export default function ReceiptScannerModal({
               </div>
 
               {/* CURRENT ARTICLE HERO CARD */}
-              <div className="p-4 rounded-3xl bg-slate-800/90 border border-slate-700 space-y-3 shadow-lg">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                    {/* Category quick switch */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const nextCat = currentItem.category === 'drinks' ? 'food' : 'drinks';
-                        const nextSplit = nextCat === 'food' ? 'shared' : 'individual';
-                        handleUpdateItem(wizardIndex, { category: nextCat, split_type: nextSplit });
-                      }}
-                      className="w-10 h-10 rounded-2xl bg-slate-700/80 hover:bg-slate-700 flex items-center justify-center text-xl shrink-0 cursor-pointer shadow-inner"
-                    >
-                      {currentItem.category === 'drinks' ? '🍺' : '🍕'}
-                    </button>
+              <div ref={wizardCardRef}>
+                <SpotlightCard
+                  spotlightColor="rgba(59, 130, 246, 0.2)"
+                  className="p-4 rounded-3xl bg-slate-800/90 border border-slate-700 space-y-3 shadow-lg"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                      {/* Category quick switch */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const nextCat = currentItem.category === 'drinks' ? 'food' : 'drinks';
+                          const nextSplit = nextCat === 'food' ? 'shared' : 'individual';
+                          handleUpdateItem(wizardIndex, { category: nextCat, split_type: nextSplit });
+                        }}
+                        className="w-10 h-10 rounded-2xl bg-slate-700/80 hover:bg-slate-700 flex items-center justify-center text-xl shrink-0 cursor-pointer shadow-inner"
+                      >
+                        {currentItem.category === 'drinks' ? '🍺' : '🍕'}
+                      </button>
 
-                    {/* Name Input */}
-                    <div className="flex-1 min-w-0">
-                      <input
-                        type="text"
-                        value={currentItem.name}
-                        onChange={(e) => handleUpdateItem(wizardIndex, { name: e.target.value })}
-                        placeholder="Nom de l'article"
-                        className="w-full bg-transparent border-b border-transparent hover:border-slate-600 focus:border-blue-500 font-black text-white text-base tracking-tight focus:outline-none py-0.5 truncate"
-                      />
-                      <div className="flex items-center gap-2 text-xs text-slate-400 mt-0.5">
-                        <span>Qté : <strong className="text-white">{currentItem.quantity}</strong></span>
-                        <span>•</span>
-                        <span>Prix : <strong className="text-emerald-400">{currentItem.unit_price.toFixed(3)} {currencySymbol}</strong></span>
+                      {/* Name Input */}
+                      <div className="flex-1 min-w-0">
+                        <input
+                          type="text"
+                          value={currentItem.name}
+                          onChange={(e) => handleUpdateItem(wizardIndex, { name: e.target.value })}
+                          placeholder="Nom de l'article"
+                          className="w-full bg-transparent border-b border-transparent hover:border-slate-600 focus:border-blue-500 font-black text-white text-base tracking-tight focus:outline-none py-0.5 truncate"
+                        />
+                        <div className="flex items-center gap-2 text-xs text-slate-400 mt-0.5">
+                          <span>Qté : <strong className="text-white">{currentItem.quantity}</strong></span>
+                          <span>•</span>
+                          <span>Prix : <strong className="text-emerald-400">{currentItem.unit_price.toFixed(3)} {currencySymbol}</strong></span>
+                        </div>
                       </div>
+                    </div>
+
+                    {/* Total for this line */}
+                    <div className="text-right shrink-0">
+                      <span className="text-[10px] uppercase font-bold text-slate-400 block">Total ligne</span>
+                      <span className="text-lg font-black text-emerald-400">
+                        {(currentItem.quantity * currentItem.unit_price).toFixed(3)} {currencySymbol}
+                      </span>
                     </div>
                   </div>
 
-                  {/* Total for this line */}
-                  <div className="text-right shrink-0">
-                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Total ligne</span>
-                    <span className="text-lg font-black text-emerald-400">
-                      {(currentItem.quantity * currentItem.unit_price).toFixed(3)} {currencySymbol}
-                    </span>
+                  {/* Quick Split Type Toggle */}
+                  <div className="flex items-center justify-between pt-2.5 border-t border-slate-700/60 text-xs">
+                    <span className="text-slate-400 text-[11px] font-medium">Type d&apos;addition :</span>
+                    <div className="flex items-center bg-slate-900 rounded-xl p-0.5 border border-slate-700/80">
+                      <button
+                        type="button"
+                        onClick={() => handleUpdateItem(wizardIndex, { split_type: 'individual' })}
+                        className={`px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
+                          currentItem.split_type === 'individual'
+                            ? 'bg-blue-600 text-white shadow'
+                            : 'text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        🍺 Individuel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleUpdateItem(wizardIndex, { split_type: 'shared' })}
+                        className={`px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
+                          currentItem.split_type === 'shared'
+                            ? 'bg-amber-600 text-white shadow'
+                            : 'text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        🍕 Partagé
+                      </button>
+                    </div>
                   </div>
-                </div>
-
-                {/* Quick Split Type Toggle */}
-                <div className="flex items-center justify-between pt-2.5 border-t border-slate-700/60 text-xs">
-                  <span className="text-slate-400 text-[11px] font-medium">Type d&apos;addition :</span>
-                  <div className="flex items-center bg-slate-900 rounded-xl p-0.5 border border-slate-700/80">
-                    <button
-                      type="button"
-                      onClick={() => handleUpdateItem(wizardIndex, { split_type: 'individual' })}
-                      className={`px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
-                        currentItem.split_type === 'individual'
-                          ? 'bg-blue-600 text-white shadow'
-                          : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      🍺 Individuel
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleUpdateItem(wizardIndex, { split_type: 'shared' })}
-                      className={`px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
-                        currentItem.split_type === 'shared'
-                          ? 'bg-amber-600 text-white shadow'
-                          : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      🍕 Partagé
-                    </button>
-                  </div>
-                </div>
+                </SpotlightCard>
               </div>
 
               {/* PARTICIPANTS ASSIGNMENT SECTION */}

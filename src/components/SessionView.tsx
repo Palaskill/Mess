@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import {
   ChevronLeft,
@@ -9,6 +9,7 @@ import {
   Wallet,
   Sparkles,
 } from 'lucide-react';
+import gsap from 'gsap';
 import {
   Session,
   Participant,
@@ -21,6 +22,7 @@ import OrdersTab from '@/components/OrdersTab';
 import BillTab from '@/components/BillTab';
 import ThemeToggle from '@/components/ThemeToggle';
 import { getUnassignedQuantity } from '@/lib/calculations';
+import BlurText from '@/components/reactbits/BlurText';
 
 interface SessionViewProps {
   session: Session;
@@ -57,6 +59,18 @@ export default function SessionView({
   }, [assignments]);
 
   const isClosed = session.status === 'closed';
+  const tabContentRef = useRef<HTMLDivElement>(null);
+
+  // Smooth tab content transition with GSAP
+  useEffect(() => {
+    if (tabContentRef.current) {
+      gsap.fromTo(
+        tabContentRef.current,
+        { opacity: 0, y: 12 },
+        { opacity: 1, y: 0, duration: 0.28, ease: 'power2.out' }
+      );
+    }
+  }, [activeTab]);
 
   // Calculate unassigned units across all individual orders
   const totalUnassignedUnits = localOrders.reduce((sum, order) => {
@@ -98,11 +112,16 @@ export default function SessionView({
 
         {/* Session Name Title */}
         <div className="mb-4">
-          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-2">
-            <span>🍻</span>
-            <span className="truncate">{session.name}</span>
-          </h1>
-          <p className="text-[11px] text-slate-400 mt-0.5">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl sm:text-3xl">🍻</span>
+            <BlurText
+              text={session.name}
+              animateBy="words"
+              delay={40}
+              className="text-2xl sm:text-3xl font-black text-white tracking-tight truncate"
+            />
+          </div>
+          <p className="text-[11px] text-slate-400 mt-1">
             Opened{' '}
             {new Date(session.created_at).toLocaleDateString([], {
               month: 'short',
@@ -193,8 +212,8 @@ export default function SessionView({
           </div>
         </div>
 
-        {/* Tab Contents */}
-        <div>
+        {/* Tab Contents with GSAP Transition */}
+        <div ref={tabContentRef}>
           {activeTab === 'orders' && (
             <OrdersTab
               sessionId={session.id}

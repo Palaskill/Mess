@@ -107,12 +107,12 @@ export async function scanReceiptWithGemini(
 
     const validMimeType = mimeType || 'image/jpeg';
 
-    // Ultra-fast lite models first (< 2.5s response time without heavy chain-of-thought delay)
+    // Primary: Google's strongest free multimodal model (Gemini 3.5 Flash) for maximum OCR intelligence & handwriting recognition
+    // Fallbacks: Ultra-fast Gemini 3.5 Flash Lite
     const models = [
+      'gemini-3.5-flash',
       'gemini-3.5-flash-lite',
       'gemini-flash-lite-latest',
-      'gemini-flash-latest',
-      'gemini-3.8-flash',
     ];
     let lastError = '';
 
@@ -140,7 +140,7 @@ export async function scanReceiptWithGemini(
         };
 
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000);
+        const timeoutId = setTimeout(() => controller.abort(), 20000);
 
         const res = await fetch(url, {
           method: 'POST',

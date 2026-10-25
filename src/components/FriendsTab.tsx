@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { UserPlus, Users, Trash2, X } from 'lucide-react';
 import { Participant, PARTICIPANT_COLORS, Assignment } from '@/types';
 import { addParticipant, removeParticipant } from '@/lib/actions';
@@ -25,6 +26,21 @@ export default function FriendsTab({
   const [selectedColor, setSelectedColor] = useState(PARTICIPANT_COLORS[0]);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (isAddOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [isAddOpen]);
 
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -185,11 +201,11 @@ export default function FriendsTab({
       )}
 
       {/* Add Friend Bottom Sheet */}
-      {isAddOpen && (
+      {mounted && isAddOpen && createPortal(
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in"
+          className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in"
           onClick={(e) => {
             if (e.target === e.currentTarget) setIsAddOpen(false);
           }}
@@ -278,7 +294,8 @@ export default function FriendsTab({
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

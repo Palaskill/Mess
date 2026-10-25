@@ -67,7 +67,7 @@ export default function SessionView({
       gsap.fromTo(
         tabContentRef.current,
         { opacity: 0, y: 12 },
-        { opacity: 1, y: 0, duration: 0.28, ease: 'power2.out' }
+        { opacity: 1, y: 0, duration: 0.28, ease: 'power2.out', clearProps: 'transform' }
       );
     }
   }, [activeTab]);

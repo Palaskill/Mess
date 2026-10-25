@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useTransition, useRef } from 'react';
+import { useState, useTransition, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Plus,
   Trash2,
@@ -96,7 +97,23 @@ export default function OrdersTab({
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const ordersContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Lock body scroll when any modal in orders tab is open
+  useEffect(() => {
+    if (isAddOpen || assigningOrder || editingWeightOrder) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [isAddOpen, assigningOrder, editingWeightOrder]);
 
   // GSAP animation for orders entrance
   useGSAP(
@@ -1125,11 +1142,11 @@ export default function OrdersTab({
       )}
 
       {/* NEW ORDER / ROUND BOTTOM SHEET */}
-      {isAddOpen && (
+      {mounted && isAddOpen && createPortal(
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/85 backdrop-blur-sm animate-fade-in"
+          className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/85 backdrop-blur-sm animate-fade-in"
           onClick={(e) => {
             if (e.target === e.currentTarget) setIsAddOpen(false);
           }}
@@ -1739,15 +1756,16 @@ export default function OrdersTab({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* INDIVIDUAL ASSIGNMENT MODAL */}
-      {assigningOrder && (
+      {mounted && assigningOrder && createPortal(
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in"
+          className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in"
           onClick={(e) => {
             if (e.target === e.currentTarget) setAssigningOrder(null);
           }}
@@ -1867,15 +1885,16 @@ export default function OrdersTab({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* WEIGHT / BILL PRICE ADJUSTMENT MODAL */}
-      {editingWeightOrder && (
+      {mounted && editingWeightOrder && createPortal(
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in"
+          className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in"
           onClick={(e) => {
             if (e.target === e.currentTarget) setEditingWeightOrder(null);
           }}
@@ -2108,7 +2127,8 @@ export default function OrdersTab({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* 📸 AI Gemini Vision Receipt Scanner Bottom Sheet Modal */}

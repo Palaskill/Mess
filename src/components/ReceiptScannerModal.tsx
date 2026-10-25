@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useTransition } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Camera,
   Upload,
@@ -61,6 +62,22 @@ export default function ReceiptScannerModal({
   const [currencySymbol, setCurrencySymbol] = useState<string>('DT');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [mounted, setMounted] = useState<boolean>(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Prevent background scroll and avoid any viewport displacement
+  useEffect(() => {
+    if (isOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [isOpen]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -106,7 +123,7 @@ export default function ReceiptScannerModal({
     }
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
   // Ultra-fast mobile compression via canvas (max 1200px, quality 0.72 JPEG - keeps text sharp while reducing size by 93%)
   const compressImage = (file: File): Promise<{ base64: string; mimeType: string }> => {
@@ -407,11 +424,11 @@ export default function ReceiptScannerModal({
     }
   };
 
-  return (
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center bg-black/85 backdrop-blur-md animate-fade-in"
+      className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/85 backdrop-blur-md animate-fade-in"
       onClick={(e) => {
         if (e.target === e.currentTarget && step !== 'analyzing') onClose();
       }}
@@ -1225,6 +1242,7 @@ export default function ReceiptScannerModal({
           }
         }
       `}</style>
-    </div>
+    </div>,
+    document.body
   );
 }

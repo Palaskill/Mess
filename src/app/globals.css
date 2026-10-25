@@ -148,8 +148,13 @@ html.light .spotlight-card:hover {
 
 /* Soft Spotlight blend in light mode */
 html.light .spotlight-overlay {
-  opacity: 0.55 !important;
   mix-blend-mode: multiply;
+}
+
+html.light .bill-card,
+html.light .order-card,
+html.light .session-card {
+  opacity: 1;
 }
 
 /* Recessed wells, empty state boxes, and inner utility surfaces */

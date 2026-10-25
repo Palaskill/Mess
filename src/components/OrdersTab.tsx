@@ -118,15 +118,20 @@ export default function OrdersTab({
   // GSAP animation for orders entrance
   useGSAP(
     () => {
-      gsap.from('.order-card', {
-        y: 18,
-        opacity: 0,
-        duration: 0.4,
-        stagger: 0.05,
-        ease: 'power2.out',
-      });
+      gsap.fromTo(
+        '.order-card',
+        { y: 18, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          duration: 0.35,
+          stagger: 0.04,
+          ease: 'power2.out',
+          clearProps: 'opacity,transform',
+        }
+      );
     },
-    { scope: ordersContainerRef, dependencies: [orders.length] }
+    { scope: ordersContainerRef, dependencies: [] }
   );
 
   // Active menu items

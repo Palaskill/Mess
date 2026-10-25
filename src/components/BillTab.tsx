@@ -62,22 +62,32 @@ export default function BillTab({
   // GSAP Entrance Animations
   useGSAP(
     () => {
-      gsap.from('.bill-card', {
-        y: 20,
-        opacity: 0,
-        duration: 0.45,
-        stagger: 0.06,
-        ease: 'power2.out',
-      });
-      gsap.from('.total-card', {
-        scale: 0.96,
-        opacity: 0,
-        duration: 0.5,
-        delay: 0.1,
-        ease: 'back.out(1.2)',
-      });
+      gsap.fromTo(
+        '.bill-card',
+        { y: 20, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          duration: 0.4,
+          stagger: 0.05,
+          ease: 'power2.out',
+          clearProps: 'opacity,transform',
+        }
+      );
+      gsap.fromTo(
+        '.total-card',
+        { scale: 0.96, opacity: 0 },
+        {
+          scale: 1,
+          opacity: 1,
+          duration: 0.45,
+          delay: 0.05,
+          ease: 'back.out(1.2)',
+          clearProps: 'opacity,transform',
+        }
+      );
     },
-    { scope: containerRef, dependencies: [orders, assignments, participants] }
+    { scope: containerRef, dependencies: [] }
   );
 
   // Tip amount is always the parsed fixed amount

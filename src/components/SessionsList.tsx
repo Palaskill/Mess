@@ -15,15 +15,20 @@ export default function SessionsList({ sessions }: SessionsListProps) {
 
   useGSAP(
     () => {
-      gsap.from('.session-card', {
-        y: 20,
-        opacity: 0,
-        duration: 0.45,
-        stagger: 0.07,
-        ease: 'power2.out',
-      });
+      gsap.fromTo(
+        '.session-card',
+        { y: 16, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          duration: 0.35,
+          stagger: 0.05,
+          ease: 'power2.out',
+          clearProps: 'opacity,transform',
+        }
+      );
     },
-    { scope: containerRef, dependencies: [sessions] }
+    { scope: containerRef, dependencies: [] }
   );
 
   return (

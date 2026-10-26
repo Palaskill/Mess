@@ -529,7 +529,7 @@ export default function ReceiptScannerModal({
         )}
 
         {/* MODAL BODY */}
-        <div className="flex-1 overflow-y-auto overscroll-contain pr-0.5">
+        <div className="flex-1 overflow-y-auto overscroll-contain pr-0.5" data-lenis-prevent>
           {/* STEP 1: UPLOAD / CAMERA SELECTION */}
           {step === 'upload' && (
             <div className="space-y-4 py-2">

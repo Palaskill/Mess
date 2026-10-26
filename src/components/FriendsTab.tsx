@@ -213,6 +213,7 @@ export default function FriendsTab({
           <div
             className="w-full max-w-md bg-slate-900 border-t sm:border border-slate-700/80 rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl animate-slide-up max-h-[85dvh] overflow-y-auto overscroll-contain pb-[max(6rem,env(safe-area-inset-bottom))] sm:pb-6"
             onClick={(e) => e.stopPropagation()}
+            data-lenis-prevent
           >
             {/* Grab handle for mobile */}
             <div className="w-12 h-1.5 bg-slate-600 rounded-full mx-auto mb-4 sm:hidden shrink-0" />

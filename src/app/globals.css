@@ -21,6 +21,9 @@ body {
   -webkit-tap-highlight-color: transparent;
   -webkit-touch-callout: none;
   touch-action: manipulation;
+  overscroll-behavior-y: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
@@ -31,6 +34,20 @@ body {
   textarea {
     font-size: 16px !important;
   }
+}
+
+/* iOS Safe Area & Native Touch Helpers */
+.safe-pb {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+.safe-pt {
+  padding-top: max(0.75rem, env(safe-area-inset-top));
+}
+
+/* Tabular figures for crisp financial alignment */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
 }
 
 /* Touch manipulation & prevent accidental text selection on interactive controls */

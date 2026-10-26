@@ -129,7 +129,7 @@ export default function SessionView({
         </div>
 
         {/* 3 Main Sticky Tabs (iOS Segmented Control Style) */}
-        <div className="sticky top-0 z-30 py-2.5 backdrop-blur-xl bg-slate-900/85 -mx-4 px-4 sm:mx-0 sm:px-0">
+        <div className="sticky top-0 z-30 pt-[max(0.6rem,env(safe-area-inset-top))] pb-2.5 backdrop-blur-xl bg-slate-900/90 -mx-4 px-4 sm:mx-0 sm:px-0 transition-colors">
           <div className="grid grid-cols-3 gap-1.5 p-1.5 rounded-2xl bg-slate-800/90 border border-slate-700/80 shadow-lg shadow-black/20">
             <button
               onClick={() => setActiveTab('orders')}

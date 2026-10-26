@@ -35,7 +35,7 @@ interface BillTabProps {
   assignments: (Assignment & { participant: Participant })[];
 }
 
-const FIXED_TIP_PRESETS = [2, 5, 10, 15, 20];
+const FIXED_TIP_PRESETS = [1, 2, 3, 5, 10];
 
 export default function BillTab({
   sessionId,
@@ -258,10 +258,10 @@ export default function BillTab({
           <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
           <div>
             <h4 className="text-sm font-bold text-amber-300">
-              ${unassignedAmount.toFixed(2)} in unassigned items!
+              {formatCurrency(unassignedAmount)} non affecté sur la table !
             </h4>
             <p className="text-xs text-amber-200/80 mt-0.5">
-              Some ordered drinks or items haven&apos;t been claimed yet. Check the Orders tab.
+              Certaines consommations n&apos;ont pas encore été attribuées. Rendez-vous dans l&apos;onglet Commandes.
             </p>
           </div>
         </div>
@@ -273,7 +273,7 @@ export default function BillTab({
           <Scale className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
           <div>
             <h4 className="text-sm font-bold text-amber-300">
-              {pendingWeightOrders.length} article(s) au grammage sans prix défini ($0)
+              {pendingWeightOrders.length} article(s) au grammage sans prix défini (0 DT)
             </h4>
             <p className="text-xs text-amber-200/80 mt-0.5">
               Rendez-vous dans l&apos;onglet <strong>Commandes</strong> pour ajuster le montant exact ou le poids dès réception de l&apos;addition.
@@ -297,12 +297,12 @@ export default function BillTab({
               </div>
               <div>
                 <span className="font-bold text-sm text-white block leading-tight">
-                  Add a Tip
+                  Ajouter un pourboire
                 </span>
                 <span className="text-[11px] text-slate-400">
                   {tipAmount > 0
-                    ? `${formatCurrency(tipAmount)} tip • ${tipParticipantIds.length} friend${tipParticipantIds.length !== 1 ? 's' : ''} splitting`
-                    : 'Optional gratuity for the bar staff'}
+                    ? `${formatCurrency(tipAmount)} • ${tipParticipantIds.length} ami${tipParticipantIds.length !== 1 ? 's' : ''}`
+                    : 'Gratification optionnelle pour le service'}
                 </span>
               </div>
             </div>
@@ -326,7 +326,7 @@ export default function BillTab({
               <div className="pt-3">
                 <div className="flex items-center justify-between mb-2">
                   <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                    Tip Amount ($)
+                    Montant du pourboire (DT)
                   </label>
                   {tipAmount > 0 && (
                     <button
@@ -334,7 +334,7 @@ export default function BillTab({
                       onClick={handleClearTip}
                       className="text-[11px] font-semibold text-rose-400 hover:text-rose-300"
                     >
-                      Remove tip
+                      Supprimer pourboire
                     </button>
                   )}
                 </div>
@@ -354,7 +354,7 @@ export default function BillTab({
                             : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
                         }`}
                       >
-                        ${amt}
+                        {amt} DT
                       </button>
                     );
                   })}
@@ -362,10 +362,10 @@ export default function BillTab({
 
                 {/* Custom Fixed Amount Input */}
                 <div className="flex items-center gap-2">
-                  <span className="text-slate-400 font-bold text-sm">$</span>
+                  <span className="text-slate-400 font-bold text-sm">DT</span>
                   <input
                     type="number"
-                    step="0.50"
+                    step="0.500"
                     min="0"
                     inputMode="decimal"
                     value={tipFixed}
@@ -375,7 +375,7 @@ export default function BillTab({
                         setTipParticipantIds(participants.map((p) => p.id));
                       }
                     }}
-                    placeholder="Enter fixed amount (e.g. 5.00)"
+                    placeholder="Montant libre (ex: 3.500)"
                     className="flex-1 px-4 py-3 rounded-2xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 text-base font-bold min-h-[46px]"
                   />
                 </div>
@@ -383,7 +383,7 @@ export default function BillTab({
                 {tipAmount > 0 && (
                   <p className="mt-2 text-sm font-extrabold text-emerald-400 flex items-center gap-1.5">
                     <span>💵</span>
-                    <span>Total Tip: ${tipAmount.toFixed(2)}</span>
+                    <span>Total Pourboire : {formatCurrency(tipAmount)}</span>
                   </p>
                 )}
               </div>
@@ -393,7 +393,7 @@ export default function BillTab({
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                      <span>👥</span> Who&apos;s tipping?
+                      <span>👥</span> Qui participe au pourboire ?
                     </label>
                     <div className="flex items-center gap-2 text-xs">
                       <button
@@ -401,7 +401,7 @@ export default function BillTab({
                         onClick={selectAllForTip}
                         className="text-blue-400 hover:text-blue-300 font-bold px-2 py-1 min-h-[36px] flex items-center touch-manipulation"
                       >
-                        All
+                        Tous
                       </button>
                       <span className="text-slate-600">•</span>
                       <button
@@ -409,7 +409,7 @@ export default function BillTab({
                         onClick={clearAllForTip}
                         className="text-slate-400 hover:text-slate-300 font-bold px-2 py-1 min-h-[36px] flex items-center touch-manipulation"
                       >
-                        None
+                        Aucun
                       </button>
                     </div>
                   </div>
@@ -444,14 +444,14 @@ export default function BillTab({
                     <div className="mt-3 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
                       <div className="flex items-center justify-between text-xs">
                         <span className="text-emerald-300 font-semibold">
-                          Each tipper pays:
+                          Part par participant :
                         </span>
                         <span className="text-emerald-400 font-extrabold text-sm">
-                          ${tipPerPerson.toFixed(2)}
+                          {formatCurrency(tipPerPerson)}
                         </span>
                       </div>
                       <p className="text-[11px] text-emerald-200/60 mt-1">
-                        ${tipAmount.toFixed(2)} ÷ {tipParticipantIds.length} = ${tipPerPerson.toFixed(2)} per person
+                        {formatCurrency(tipAmount)} ÷ {tipParticipantIds.length} = {formatCurrency(tipPerPerson)} par personne
                       </p>
                     </div>
                   )}
@@ -517,7 +517,7 @@ export default function BillTab({
 
               {/* Itemized breakdown */}
               {bill.items.length > 0 || bill.tipAmount > 0 ? (
-                <div className="pt-2 border-t border-slate-700/50 space-y-1.5">
+                <div className="pt-2.5 border-t border-dashed border-slate-700/60 space-y-1.5">
                   {bill.items.map((item, idx) => (
                     <div
                       key={idx}
@@ -526,7 +526,7 @@ export default function BillTab({
                       <span className="truncate pr-2 font-medium">
                         {item.label}
                       </span>
-                      <span className="font-semibold text-slate-400 shrink-0">
+                      <span className="font-semibold text-slate-400 shrink-0 tabular-nums">
                         {formatCurrency(item.amount)}
                       </span>
                     </div>
@@ -534,17 +534,17 @@ export default function BillTab({
                   {bill.tipAmount > 0 && (
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-emerald-300/80 font-medium flex items-center gap-1">
-                        <span>💵</span> Tip
+                        <span>💵</span> Pourboire
                       </span>
-                      <span className="font-semibold text-emerald-400 shrink-0">
+                      <span className="font-semibold text-emerald-400 shrink-0 tabular-nums">
                         {formatCurrency(bill.tipAmount)}
                       </span>
                     </div>
                   )}
                 </div>
               ) : (
-                <div className="pt-2 border-t border-slate-700/50 text-xs text-slate-500 italic">
-                  No items assigned yet
+                <div className="pt-2.5 border-t border-dashed border-slate-700/60 text-xs text-slate-500 italic">
+                  Aucun article affecté
                 </div>
               )}
             </SpotlightCard>

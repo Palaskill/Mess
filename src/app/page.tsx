@@ -18,18 +18,15 @@ export default async function HomePage() {
         <header className="mb-6 sm:mb-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500/20 via-blue-500/20 to-emerald-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-lg shadow-amber-500/10">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-md">
                 <Beer className="w-6 h-6 text-amber-400" />
               </div>
               <div>
                 <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-2">
                   MEss
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30 tracking-normal">
-                    v1.0
-                  </span>
                 </h1>
                 <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
-                  Split bar tabs with friends without the headache
+                  Partage d&apos;addition & sessions de table entre amis
                 </p>
               </div>
             </div>
@@ -56,21 +53,48 @@ export default async function HomePage() {
         {/* Sessions List or Empty State */}
         <section aria-label="Bar Sessions">
           {sessions.length === 0 ? (
-            <div className="rounded-3xl bg-slate-800/50 border border-slate-800 p-8 sm:p-12 text-center shadow-xl">
-              <div className="w-20 h-20 mx-auto mb-4 rounded-3xl bg-slate-800 border border-slate-700 flex items-center justify-center text-4xl shadow-inner animate-bounce">
+            <div className="rounded-3xl bg-slate-800/80 border border-slate-700/80 p-6 sm:p-8 text-center shadow-xl space-y-6">
+              <div className="w-16 h-16 mx-auto rounded-2xl bg-amber-500/15 border border-amber-500/25 flex items-center justify-center text-3xl shadow-inner">
                 🍻
               </div>
-              <h2 className="text-xl font-bold text-white mb-2 tracking-tight">
-                No bar sessions yet
-              </h2>
-              <p className="text-slate-400 text-sm max-w-sm mx-auto mb-6 leading-relaxed">
-                Starting a night out or table tab? Create your first session to track drinks, assign orders, and split fairly.
-              </p>
+              <div>
+                <h2 className="text-xl font-bold text-white tracking-tight">
+                  Aucune session active
+                </h2>
+                <p className="text-slate-400 text-xs sm:text-sm max-w-sm mx-auto mt-1 leading-relaxed">
+                  Une sortie au bar, café ou restaurant ? Ouvrez une session pour enregistrer l&apos;addition et la partager sans calcul manuel.
+                </p>
+              </div>
 
-              <div className="flex justify-center">
+              {/* 3 Pillars */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-left pt-2">
+                <div className="p-3.5 rounded-2xl bg-slate-900/60 border border-slate-700/60 space-y-1">
+                  <span className="text-lg">📸</span>
+                  <h4 className="text-xs font-bold text-white">Scan OCR</h4>
+                  <p className="text-[11px] text-slate-400 leading-snug">
+                    Prenez le ticket en photo, les prix en DT sont importés par IA.
+                  </p>
+                </div>
+                <div className="p-3.5 rounded-2xl bg-slate-900/60 border border-slate-700/60 space-y-1">
+                  <span className="text-lg">👥</span>
+                  <h4 className="text-xs font-bold text-white">Affectation</h4>
+                  <p className="text-[11px] text-slate-400 leading-snug">
+                    Attribuez chaque consommation ou divisez les plats partagés.
+                  </p>
+                </div>
+                <div className="p-3.5 rounded-2xl bg-slate-900/60 border border-slate-700/60 space-y-1">
+                  <span className="text-lg">🧾</span>
+                  <h4 className="text-xs font-bold text-white">Partage net</h4>
+                  <p className="text-[11px] text-slate-400 leading-snug">
+                    Calcul exact au millime près avec pourboire équitable.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex justify-center pt-2">
                 <CreateSessionForm
                   mode="button"
-                  buttonText="Start First Session"
+                  buttonText="Créer une session"
                   showFab={false}
                 />
               </div>
@@ -79,10 +103,10 @@ export default async function HomePage() {
             <div className="space-y-3">
               <div className="flex items-center justify-between mb-2">
                 <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                  Recent Sessions
+                  Sessions récentes
                 </h2>
                 <span className="text-xs text-slate-500 font-medium">
-                  Tap card to view
+                  Touchez pour ouvrir
                 </span>
               </div>
 

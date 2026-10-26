@@ -22,7 +22,6 @@ import OrdersTab from '@/components/OrdersTab';
 import BillTab from '@/components/BillTab';
 import ThemeToggle from '@/components/ThemeToggle';
 import { getUnassignedQuantity } from '@/lib/calculations';
-import BlurText from '@/components/reactbits/BlurText';
 
 interface SessionViewProps {
   session: Session;
@@ -112,17 +111,14 @@ export default function SessionView({
 
         {/* Session Name Title */}
         <div className="mb-4">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl sm:text-3xl">🍻</span>
-            <BlurText
-              text={session.name}
-              animateBy="words"
-              delay={40}
-              className="text-2xl sm:text-3xl font-black text-white tracking-tight truncate"
-            />
+          <div className="flex items-center gap-2.5">
+            <span className="text-2xl sm:text-3xl select-none" role="img" aria-hidden="true">🍻</span>
+            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight truncate">
+              {session.name}
+            </h1>
           </div>
           <p className="text-[11px] text-slate-400 mt-1">
-            Opened{' '}
+            Ouvert le{' '}
             {new Date(session.created_at).toLocaleDateString([], {
               month: 'short',
               day: 'numeric',
@@ -145,7 +141,7 @@ export default function SessionView({
             >
               <div className="flex items-center gap-1.5">
                 <Receipt className="w-3.5 h-3.5 shrink-0" />
-                <span>Orders</span>
+                <span>Commandes</span>
                 {orders.length > 0 && (
                   <span
                     className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
@@ -158,11 +154,11 @@ export default function SessionView({
               </div>
               {totalUnassignedUnits > 0 ? (
                 <span className="text-[9px] text-amber-300 font-extrabold mt-0.5">
-                  ⚠️ {totalUnassignedUnits} unassigned
+                  ⚠️ {totalUnassignedUnits} à affecter
                 </span>
               ) : (
                 <span className="text-[9px] text-slate-400 font-normal mt-0.5 opacity-80">
-                  {orders.length} items
+                  {orders.length} articles
                 </span>
               )}
             </button>
@@ -177,7 +173,7 @@ export default function SessionView({
             >
               <div className="flex items-center gap-1.5">
                 <Users className="w-3.5 h-3.5 shrink-0" />
-                <span>Friends</span>
+                <span>Amis</span>
                 {participants.length > 0 && (
                   <span
                     className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
@@ -189,7 +185,7 @@ export default function SessionView({
                 )}
               </div>
               <span className="text-[9px] text-slate-400 font-normal mt-0.5 opacity-80">
-                {participants.length} seated
+                {participants.length} convive{participants.length !== 1 ? 's' : ''}
               </span>
             </button>
 
@@ -203,10 +199,10 @@ export default function SessionView({
             >
               <div className="flex items-center gap-1.5">
                 <Wallet className="w-3.5 h-3.5 shrink-0" />
-                <span>The Bill</span>
+                <span>L&apos;Addition</span>
               </div>
               <span className="text-[9px] text-emerald-400 font-extrabold mt-0.5">
-                Split tab
+                Partage net
               </span>
             </button>
           </div>

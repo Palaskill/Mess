@@ -16,6 +16,7 @@ export interface Session {
   name: string;
   status: 'open' | 'closed';
   created_at: string;
+  has_password?: boolean;
 }
 
 export interface Participant {

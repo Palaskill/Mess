@@ -288,8 +288,11 @@ export default function BillTab({
           {/* Tip Toggle Header */}
           <button
             type="button"
-            onClick={() => (showTipSection ? setShowTipSection(false) : handleOpenTip())}
-            className="w-full flex items-center justify-between p-4 text-left hover:bg-slate-800/80 transition-colors active:bg-slate-800 cursor-pointer"
+            disabled={isClosed}
+            onClick={() => (!isClosed && (showTipSection ? setShowTipSection(false) : handleOpenTip()))}
+            className={`w-full flex items-center justify-between p-4 text-left transition-colors ${
+              isClosed ? 'cursor-default opacity-90' : 'hover:bg-slate-800/80 active:bg-slate-800 cursor-pointer'
+            }`}
           >
             <div className="flex items-center gap-2.5">
               <div className="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center text-lg">
@@ -297,11 +300,13 @@ export default function BillTab({
               </div>
               <div>
                 <span className="font-bold text-sm text-white block leading-tight">
-                  Ajouter un pourboire
+                  Pourboire
                 </span>
                 <span className="text-[11px] text-slate-400">
                   {tipAmount > 0
                     ? `${formatCurrency(tipAmount)} • ${tipParticipantIds.length} ami${tipParticipantIds.length !== 1 ? 's' : ''}`
+                    : isClosed
+                    ? 'Aucun pourboire ajouté'
                     : 'Gratification optionnelle pour le service'}
                 </span>
               </div>
@@ -313,9 +318,11 @@ export default function BillTab({
                   +{formatCurrency(tipAmount)}
                 </span>
               )}
-              <span className={`text-slate-400 text-xs transition-transform ${showTipSection ? 'rotate-180' : ''}`}>
-                ▼
-              </span>
+              {!isClosed && (
+                <span className={`text-slate-400 text-xs transition-transform ${showTipSection ? 'rotate-180' : ''}`}>
+                  ▼
+                </span>
+              )}
             </div>
           </button>
 
@@ -599,12 +606,12 @@ export default function BillTab({
               className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-slate-700 hover:bg-slate-600 active:bg-slate-650 text-slate-200 text-xs font-bold transition-all active:scale-95 border border-slate-600/70 min-h-[42px] cursor-pointer"
             >
               <Lock className="w-3.5 h-3.5 text-slate-400" />
-              <span>{isPending ? 'Closing...' : 'Close Tab'}</span>
+              <span>{isPending ? 'Clôture...' : 'Clôturer la table'}</span>
             </button>
           ) : (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-800 text-rose-400 border border-rose-500/30 text-xs font-bold">
-              <Lock className="w-3.5 h-3.5 text-rose-400" />
-              <span>Closed</span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700 text-xs font-bold">
+              <Lock className="w-3.5 h-3.5 text-slate-400" />
+              <span>Lecture seule</span>
             </span>
           )}
         </div>

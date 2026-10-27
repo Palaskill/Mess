@@ -2,6 +2,7 @@
 
 import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
+import crypto from 'crypto';
 import { createClient } from '@/utils/supabase/server';
 import {
   MenuItem,
@@ -246,8 +247,75 @@ export async function deleteMenuItem(id: string): Promise<{ success: boolean; er
 }
 
 // ==========================================
-// 2. SESSIONS
+// 2. SESSIONS & ACCESS CONTROL
 // ==========================================
+
+function hashSessionPassword(pwd: string): string {
+  return crypto.createHash('sha256').update(pwd.trim()).digest('hex');
+}
+
+function parseSessionRecord<T extends { name: string; password_hash?: string | null }>(
+  raw: T
+): T & { has_password: boolean } {
+  const rawName = raw.name || '';
+  const match = rawName.match(/^([\s\S]*?)::auth:([a-f0-9]+)$/);
+  if (match) {
+    return {
+      ...raw,
+      name: match[1],
+      has_password: true,
+    };
+  }
+  if (raw.password_hash) {
+    return {
+      ...raw,
+      has_password: true,
+    };
+  }
+  return {
+    ...raw,
+    has_password: false,
+  };
+}
+
+function extractPasswordHash(rawName: string, directHash?: string | null): string | null {
+  if (directHash) return directHash;
+  const match = (rawName || '').match(/^([\s\S]*?)::auth:([a-f0-9]+)$/);
+  return match ? match[2] : null;
+}
+
+export async function verifySessionPassword(
+  sessionId: string,
+  password: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const supabase = await getSupabase();
+    const { data, error } = await supabase
+      .from('sessions')
+      .select('*')
+      .eq('id', sessionId)
+      .single();
+
+    if (error || !data) {
+      return { success: false, error: 'Session introuvable' };
+    }
+
+    const storedHash = extractPasswordHash(data.name, data.password_hash);
+    if (!storedHash) {
+      // Session without password (open session)
+      return { success: true };
+    }
+
+    const inputHash = hashSessionPassword(password);
+    if (inputHash === storedHash) {
+      return { success: true };
+    }
+
+    return { success: false, error: 'Mot de passe incorrect' };
+  } catch (err: any) {
+    return { success: false, error: err?.message || 'Erreur lors de la vérification' };
+  }
+}
 
 export async function getSessions(): Promise<SessionWithCount[]> {
   try {
@@ -268,18 +336,31 @@ export async function getSessions(): Promise<SessionWithCount[]> {
         console.error('Error fetching sessions fallback:', simpleError);
         return [];
       }
-      return (simpleData || []) as SessionWithCount[];
+      return (simpleData || []).map((s: any) => {
+        const parsed = parseSessionRecord(s);
+        return {
+          id: parsed.id,
+          name: parsed.name,
+          status: parsed.status,
+          created_at: parsed.created_at,
+          has_password: parsed.has_password,
+        };
+      });
     }
 
-    return (data || []).map((s: any) => ({
-      id: s.id,
-      name: s.name,
-      status: s.status,
-      created_at: s.created_at,
-      participant_count: Array.isArray(s.participants)
-        ? (s.participants[0]?.count ?? 0)
-        : 0,
-    }));
+    return (data || []).map((s: any) => {
+      const parsed = parseSessionRecord(s);
+      return {
+        id: parsed.id,
+        name: parsed.name,
+        status: parsed.status,
+        created_at: parsed.created_at,
+        has_password: parsed.has_password,
+        participant_count: Array.isArray(s.participants)
+          ? (s.participants[0]?.count ?? 0)
+          : 0,
+      };
+    });
   } catch (err) {
     console.error('Failed to get sessions:', err);
     return [];
@@ -299,15 +380,18 @@ const DEFAULT_PARTICIPANT_COLORS = [
 
 export async function createSession(
   nameOrFormData: string | FormData,
-  initialParticipants?: { name: string; color: string }[]
+  initialParticipants?: { name: string; color: string }[],
+  password?: string
 ): Promise<Session> {
   let name = '';
   let participantsList = initialParticipants || [];
+  let sessionPassword = password || '';
 
   if (typeof nameOrFormData === 'string') {
     name = nameOrFormData.trim();
   } else {
     name = (nameOrFormData.get('name') as string)?.trim();
+    sessionPassword = ((nameOrFormData.get('password') as string)?.trim() || sessionPassword);
     const rawParticipants = nameOrFormData.get('participants') as string;
     if (rawParticipants && participantsList.length === 0) {
       try {
@@ -323,13 +407,23 @@ export async function createSession(
   }
 
   if (!name) {
-    throw new Error('Session name is required');
+    throw new Error('Le nom de la session est obligatoire');
+  }
+
+  // Format stored name with password hash if provided
+  let storedName = name;
+  let pwdHash: string | null = null;
+  if (sessionPassword) {
+    pwdHash = hashSessionPassword(sessionPassword);
+    storedName = `${name}::auth:${pwdHash}`;
   }
 
   const supabase = await getSupabase();
+  const insertPayload: any = { name: storedName, status: 'open' };
+
   const { data: session, error } = await supabase
     .from('sessions')
-    .insert([{ name, status: 'open' }])
+    .insert([insertPayload])
     .select()
     .single();
 
@@ -352,7 +446,8 @@ export async function createSession(
   }
 
   revalidatePath('/');
-  return session as Session;
+  const parsed = parseSessionRecord(session);
+  return parsed as Session;
 }
 
 export async function closeSession(id: string): Promise<{ success: boolean; error?: string }> {
@@ -377,9 +472,32 @@ export async function closeSession(id: string): Promise<{ success: boolean; erro
   }
 }
 
-export async function deleteSession(id: string): Promise<{ success: boolean; error?: string }> {
+export async function deleteSession(
+  id: string,
+  password?: string
+): Promise<{ success: boolean; error?: string }> {
   try {
     const supabase = await getSupabase();
+
+    // Verify session password if protected
+    const { data: sessionData } = await supabase
+      .from('sessions')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (sessionData) {
+      const storedHash = extractPasswordHash(sessionData.name, sessionData.password_hash);
+      if (storedHash) {
+        if (!password) {
+          return { success: false, error: 'Mot de passe requis pour supprimer cette session' };
+        }
+        if (hashSessionPassword(password) !== storedHash) {
+          return { success: false, error: 'Mot de passe incorrect' };
+        }
+      }
+    }
+
     const { error } = await supabase.from('sessions').delete().eq('id', id);
 
     if (error) {
@@ -973,7 +1091,7 @@ export async function getSessionData(sessionId: string): Promise<{
     ]);
 
     return {
-      session: sessionRes.data as Session | null,
+      session: sessionRes.data ? (parseSessionRecord(sessionRes.data) as Session) : null,
       participants: (participantsRes.data || []) as Participant[],
       orders: (ordersRes.data || []) as Order[],
       assignments: (assignmentsRes.data || []) as (Assignment & { participant: Participant })[],

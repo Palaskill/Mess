@@ -37,21 +37,52 @@ export default function SessionCard({ session }: SessionCardProps) {
   const handleConfirmDelete = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+
+    let passwordToDelete: string | undefined = undefined;
+
+    if (session.has_password) {
+      let savedKey: string | null = null;
+      try {
+        savedKey = localStorage.getItem(`mess_auth_${session.id}`);
+      } catch {}
+
+      if (!savedKey) {
+        const input = window.prompt(
+          'Cette session est protégée par mot de passe.\nEntrez le mot de passe créateur pour confirmer la suppression :'
+        );
+        if (input === null) {
+          setShowConfirm(false);
+          return;
+        }
+        if (!input.trim()) {
+          alert('Mot de passe requis pour supprimer cette session');
+          setShowConfirm(false);
+          return;
+        }
+        passwordToDelete = input.trim();
+      } else {
+        passwordToDelete = savedKey;
+      }
+    }
+
     setIsDeleting(true);
 
     startTransition(async () => {
       try {
-        const res = await deleteSession(session.id);
+        const res = await deleteSession(session.id, passwordToDelete);
         if (res.success) {
+          try {
+            localStorage.removeItem(`mess_auth_${session.id}`);
+          } catch {}
           router.refresh();
         } else {
-          alert(res.error || 'Failed to delete session');
+          alert(res.error || 'Impossible de supprimer la session');
           setIsDeleting(false);
           setShowConfirm(false);
         }
       } catch (err: any) {
         console.error('Failed to delete session:', err);
-        alert(err?.message || 'Failed to delete session');
+        alert(err?.message || 'Erreur lors de la suppression de la session');
         setIsDeleting(false);
         setShowConfirm(false);
       }
@@ -97,8 +128,16 @@ export default function SessionCard({ session }: SessionCardProps) {
             </span>
           </div>
 
-          <h3 className="text-lg font-bold text-white group-hover:text-blue-400 transition-colors truncate">
-            {session.name}
+          <h3 className="text-lg font-bold text-white group-hover:text-blue-400 transition-colors truncate flex items-center gap-1.5">
+            <span className="truncate">{session.name}</span>
+            {session.has_password && (
+              <span
+                title="Protégée par mot de passe créateur"
+                className="text-[11px] px-1.5 py-0.2 rounded-full bg-slate-700/60 text-slate-300 border border-slate-600/50 inline-flex items-center gap-1 shrink-0 font-normal"
+              >
+                🔒
+              </span>
+            )}
           </h3>
         </div>
 

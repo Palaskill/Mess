@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { UserPlus, Users, Trash2, X } from 'lucide-react';
+import { UserPlus, Users, Trash2, X, Lock } from 'lucide-react';
 import { Participant, PARTICIPANT_COLORS, Assignment } from '@/types';
 import { addParticipant, removeParticipant } from '@/lib/actions';
 
@@ -125,7 +125,7 @@ export default function FriendsTab({
           </p>
         </div>
 
-        {!isClosed && (
+        {!isClosed ? (
           <button
             onClick={() => {
               setError(null);
@@ -136,6 +136,11 @@ export default function FriendsTab({
             <UserPlus className="w-4 h-4" />
             <span>Add Friend</span>
           </button>
+        ) : (
+          <span className="px-3 py-1.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700/80 text-xs font-semibold flex items-center gap-1.5">
+            <Lock className="w-3.5 h-3.5 text-slate-400" />
+            <span>Lecture seule</span>
+          </span>
         )}
       </div>
 

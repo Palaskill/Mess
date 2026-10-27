@@ -17,6 +17,7 @@ CREATE TABLE sessions (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   name TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'closed')),
+  password_hash TEXT,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 

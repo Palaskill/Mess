@@ -3,7 +3,7 @@
 import { useState, useTransition, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
-import { Sparkles, Plus, X, Beer } from 'lucide-react';
+import { Sparkles, Plus, X, Beer, Lock, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import { createSession } from '@/lib/actions';
 
 interface CreateSessionFormProps {
@@ -35,6 +35,8 @@ export default function CreateSessionForm({
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [selectedFriends, setSelectedFriends] = useState<string[]>([
     'Firas',
     'Dhia',
@@ -65,6 +67,8 @@ export default function CreateSessionForm({
     if (isOpen) {
       setError(null);
       setName('');
+      setPassword('');
+      setShowPassword(false);
       setSelectedFriends(REGULAR_FRIENDS.map((f) => f.name));
       // Slight delay to allow modal render for smooth focus
       const timer = setTimeout(() => {
@@ -100,7 +104,18 @@ export default function CreateSessionForm({
     e.preventDefault();
     const trimmed = name.trim();
     if (!trimmed) {
-      setError('Please enter a session name');
+      setError('Veuillez entrer un nom pour la session');
+      return;
+    }
+
+    const trimmedPassword = password.trim();
+    if (!trimmedPassword) {
+      setError('Veuillez définir un mot de passe pour verrouiller les modifications');
+      return;
+    }
+
+    if (trimmedPassword.length < 2) {
+      setError('Le mot de passe doit comporter au moins 2 caractères');
       return;
     }
 
@@ -111,12 +126,22 @@ export default function CreateSessionForm({
         const initialParticipants = REGULAR_FRIENDS.filter((f) =>
           selectedFriends.includes(f.name)
         );
-        const newSession = await createSession(trimmed, initialParticipants);
+        const newSession = await createSession(trimmed, initialParticipants, trimmedPassword);
+        
+        // Save creator auth key to localStorage immediately
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.setItem(`mess_auth_${newSession.id}`, trimmedPassword);
+          } catch (e) {
+            console.error('Failed to save session key in localStorage', e);
+          }
+        }
+
         setIsOpen(false);
         router.push(`/session/${newSession.id}`);
       } catch (err: any) {
         console.error('Failed to create session:', err);
-        setError(err?.message || 'Could not create session. Please try again.');
+        setError(err?.message || 'Impossible de créer la session. Veuillez réessayer.');
       }
     });
   };
@@ -207,7 +232,7 @@ export default function CreateSessionForm({
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Friday Drinks at Mulligan's"
+                  placeholder="ex: Verre du vendredi au Cosy"
                   autoComplete="off"
                   autoCorrect="off"
                   spellCheck={false}
@@ -215,8 +240,49 @@ export default function CreateSessionForm({
                   maxLength={50}
                   className="w-full px-4 py-3 bg-slate-800/90 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all min-h-[48px] text-base"
                 />
+              </div>
+
+              {/* Creator Password Field */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label
+                    htmlFor="session-password"
+                    className="block text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-1.5"
+                  >
+                    <Lock className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Mot de passe créateur</span>
+                  </label>
+                  <span className="text-[10px] text-amber-300 font-bold bg-amber-500/15 px-2 py-0.5 rounded-full border border-amber-500/30">
+                    Obligatoire
+                  </span>
+                </div>
+                <div className="relative">
+                  <input
+                    id="session-password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="ex: 1234 ou votre code secret"
+                    autoComplete="new-password"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    disabled={isPending}
+                    className="w-full pl-4 pr-11 py-3 bg-slate-800/90 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all min-h-[48px] text-base font-mono tracking-wider"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1.5 rounded-lg active:scale-95 touch-manipulation cursor-pointer"
+                    aria-label={showPassword ? 'Masquer' : 'Afficher'}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                <p className="mt-1.5 text-[11px] text-slate-400 leading-snug">
+                  🔒 <strong>Seul vous</strong> pourrez ajouter des commandes, scanner ou affecter. Les autres personnes auront un accès en lecture seule.
+                </p>
                 {error && (
-                  <p className="mt-1.5 text-xs text-rose-400 flex items-center gap-1">
+                  <p className="mt-2 text-xs text-rose-400 flex items-center gap-1 font-semibold">
                     <span>⚠️</span> {error}
                   </p>
                 )}
@@ -320,7 +386,7 @@ export default function CreateSessionForm({
                 </button>
                 <button
                   type="submit"
-                  disabled={isPending || !name.trim()}
+                  disabled={isPending || !name.trim() || !password.trim()}
                   className="flex-1 py-3 px-4 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 active:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none transition-colors min-h-[48px] flex items-center justify-center gap-2 shadow-lg shadow-blue-900/30"
                 >
                   {isPending ? (

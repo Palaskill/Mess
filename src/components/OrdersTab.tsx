@@ -15,6 +15,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   Camera,
+  Lock,
 } from 'lucide-react';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
@@ -788,7 +789,7 @@ export default function OrdersTab({
           </p>
         </div>
 
-        {!isClosed && (
+        {!isClosed ? (
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -813,6 +814,11 @@ export default function OrdersTab({
               <span>New Order</span>
             </button>
           </div>
+        ) : (
+          <span className="px-3 py-1.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700/80 text-xs font-semibold flex items-center gap-1.5">
+            <Lock className="w-3.5 h-3.5 text-slate-400" />
+            <span>Lecture seule</span>
+          </span>
         )}
       </div>
 

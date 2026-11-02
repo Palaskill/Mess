@@ -1,5 +1,7 @@
 'use client';
 
+import { celebrateAssignment } from '@/lib/assignment-effects';
+
 import FriendAvatar from '@/components/FriendAvatar';
 
 import { separateSharedUnits } from '@/lib/shared-orders';
@@ -951,7 +953,10 @@ export default function OrdersTab({
                           return (
                             <button
                               key={p.id}
-                              onClick={() => handleToggleSharer(order, p)}
+                              onClick={(event) => {
+                                if (!isSharing) celebrateAssignment(event.currentTarget, order.item_name, menuItems.find(item => item.id === order.menu_item_id)?.category);
+                                handleToggleSharer(order, p);
+                              }}
                               disabled={isClosed || isPending}
                               aria-pressed={isSharing}
                               className={`sharing-chip ${isSharing ? "is-selected" : ""} flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all min-h-[44px] active:scale-95 ${
@@ -1014,7 +1019,7 @@ export default function OrdersTab({
                             <div className="quantity-control">
                               {!isClosed && <button type="button" aria-label={`${t.orders.adjust} ${p.name} −1`} disabled={isPending || currentQty === 0} onClick={() => handleUpdateAssignmentQty(order, p.id, currentQty - 1)}>−</button>}
                               <span className="tabular-nums" aria-live="polite">{currentQty}</span>
-                              {!isClosed && <button type="button" aria-label={`${t.orders.adjust} ${p.name} +1`} disabled={isPending || unassigned <= 0} onClick={() => handleUpdateAssignmentQty(order, p.id, currentQty + 1)}>+</button>}
+                              {!isClosed && <button type="button" aria-label={`${t.orders.adjust} ${p.name} +1`} disabled={isPending || unassigned <= 0} onClick={(event) => { celebrateAssignment(event.currentTarget, order.item_name, menuItems.find(item => item.id === order.menu_item_id)?.category); handleUpdateAssignmentQty(order, p.id, currentQty + 1); }}>+</button>}
                             </div>
                           </div>;
                         })}
@@ -1566,7 +1571,7 @@ export default function OrdersTab({
                                         </span>
                                         <button
                                           type="button"
-                                          onClick={() => handleAdjustRoundItemParticipantQty(item.id, p.id, 1)}
+                                          onClick={(event) => { celebrateAssignment(event.currentTarget, item.name, item.category); handleAdjustRoundItemParticipantQty(item.id, p.id, 1); }}
                                           disabled={totalAssigned >= item.quantity}
                                           className="w-5 h-5 rounded bg-blue-700 hover:bg-blue-800 disabled:opacity-30 flex items-center justify-center font-black text-xs text-white"
                                         >
@@ -1577,7 +1582,7 @@ export default function OrdersTab({
                                       totalAssigned < item.quantity && (
                                         <button
                                           type="button"
-                                          onClick={() => handleAdjustRoundItemParticipantQty(item.id, p.id, 1)}
+                                          onClick={(event) => { celebrateAssignment(event.currentTarget, item.name, item.category); handleAdjustRoundItemParticipantQty(item.id, p.id, 1); }}
                                           className="w-4 h-4 rounded bg-slate-700 hover:bg-blue-500 hover:text-white text-slate-300 flex items-center justify-center text-[10px] font-bold"
                                         >
                                           +
@@ -1592,9 +1597,10 @@ export default function OrdersTab({
                                 <button
                                   key={p.id}
                                   type="button"
-                                  onClick={() =>
-                                    handleToggleRoundItemParticipant(item.id, p.id, item.splitType)
-                                  }
+                                  onClick={(event) => {
+                                    if (!isSelected) celebrateAssignment(event.currentTarget, item.name, item.category);
+                                    handleToggleRoundItemParticipant(item.id, p.id, item.splitType);
+                                  }}
                                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all min-h-[34px] touch-manipulation active:scale-95 ${
                                     isSelected
                                       ? 'bg-blue-600 text-white shadow-sm ring-1 ring-blue-400'
@@ -1752,9 +1758,10 @@ export default function OrdersTab({
                         </span>
                         <button
                           type="button"
-                          onClick={() =>
-                            handleUpdateAssignmentQty(assigningOrder, p.id, currentQty + 1)
-                          }
+                          onClick={(event) => {
+                            celebrateAssignment(event.currentTarget, assigningOrder.item_name, menuItems.find(item => item.id === assigningOrder.menu_item_id)?.category);
+                            handleUpdateAssignmentQty(assigningOrder, p.id, currentQty + 1);
+                          }}
                           disabled={
                             getUnassignedQuantity(assigningOrder, assignments) <= 0 || isPending
                           }

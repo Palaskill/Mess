@@ -1,5 +1,7 @@
 'use client';
 
+import { celebrateAssignment } from '@/lib/assignment-effects';
+
 import FriendAvatar from '@/components/FriendAvatar';
 import { separateSharedUnits } from '@/lib/shared-orders';
 
@@ -899,7 +901,10 @@ export default function ReceiptScannerModal({
                           <button
                             key={p.id}
                             type="button"
-                            onClick={() => handleToggleParticipantInWizard(p.id)}
+                            onClick={(event) => {
+                              if (!isSelected) celebrateAssignment(event.currentTarget, currentItem.name, currentItem.category);
+                              handleToggleParticipantInWizard(p.id);
+                            }}
                             aria-pressed={isSelected}
                             className={`p-3 rounded-2xl border flex items-center gap-2.5 text-start transition-all active:scale-95 touch-manipulation cursor-pointer ${
                               isSelected
@@ -961,7 +966,10 @@ export default function ReceiptScannerModal({
                             <button
                               type="button"
                               aria-label={`${language === "fr" ? "Ajouter un article à" : language === "ar" ? "إضافة صنف إلى" : "Add one item to"} ${p.name}`}
-                              onClick={() => handleIncrementParticipant(p.id)}
+                              onClick={(event) => {
+                                if (assignments.length < currentItem.quantity) celebrateAssignment(event.currentTarget, currentItem.name, currentItem.category);
+                                handleIncrementParticipant(p.id);
+                              }}
                               disabled={assignments.length >= currentItem.quantity}
                               className="w-11 h-11 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-30 disabled:hover:bg-blue-600 text-white text-xs font-bold flex items-center justify-center touch-manipulation cursor-pointer"
                             >

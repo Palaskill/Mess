@@ -686,3 +686,30 @@ html.light .session-workspace { --surface: #fff; --soft: #f4f6f9; --ink: #172033
 .orders-workspace .sharing-chip span:last-child { background: transparent; white-space: nowrap; }
 @media (max-width: 380px) { .order-symbol { display: none; } .orders-workspace .order-card { padding: 16px; } }
 @media (min-width: 640px) { .orders-toolbar { flex-direction: row; align-items: center; justify-content: space-between; } .orders-actions { display: flex; } .orders-actions button { padding-inline: 16px; } .session-topbar .theme-toggle-compact { width: auto; } }
+
+/* Receipt scanner uses scoped colors in both themes, including SVG inheritance. */
+.receipt-scanner { --scan-ink: #f1f5f9; --scan-muted: #b8c5d6; --scan-surface: #192333; --scan-soft: #253247; --scan-line: #40516a; }
+html.light .receipt-scanner { --scan-ink: #172033; --scan-muted: #526176; --scan-surface: #fff; --scan-soft: #f4f7fb; --scan-line: #dce4ef; }
+.receipt-scanner .scanner-sheet { background: var(--scan-surface) !important; color: var(--scan-ink); }
+.scanner-title { font-size: 20px; font-weight: 750; line-height: 1.35; letter-spacing: -.025em; }
+.scanner-upload { display: grid; gap: 12px; padding-top: 12px; }
+.scanner-steps { display: flex; align-items: center; gap: 12px; font-size: 11px; font-weight: 600; color: var(--scan-muted); margin-bottom: 4px; }
+.receipt-scanner .scanner-choice { display: flex; align-items: center; gap: 16px; width: 100%; padding: 20px 16px; border-radius: 20px; text-align: start; border: 1px solid var(--scan-line); transition: transform .15s, background .15s; }
+.receipt-scanner .scanner-choice:active { transform: scale(.985); }
+.receipt-scanner .scanner-camera, html.light .receipt-scanner .scanner-camera { background: #2457d6 !important; color: #fff !important; border-color: #2457d6; }
+html.light .receipt-scanner .scanner-camera * { color: #fff !important; }
+.receipt-scanner .scanner-gallery, html.light .receipt-scanner .scanner-gallery { background: var(--scan-soft) !important; color: var(--scan-ink) !important; }
+.scanner-choice-icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 14px; background: #ffffff20; flex-shrink: 0; }
+.scanner-gallery .scanner-choice-icon { background: var(--scan-surface); }
+.scanner-choice-copy { flex: 1; min-width: 0; }
+.scanner-choice-copy strong { display: block; font-size: 16px; line-height: 1.4; }
+.scanner-choice-copy > span { display: block; font-size: 12px; margin-top: 4px; }
+.scanner-ready { display: flex; align-items: center; gap: 8px; padding: 4px; color: #6ee7b7; font-size: 12px; }
+html.light .scanner-ready { color: #08734f; }
+.scanner-ready svg, .scanner-tips > svg { flex-shrink: 0; }
+.scanner-tips { display: flex; align-items: flex-start; gap: 12px; padding: 16px; border-radius: 16px; background: var(--scan-soft); color: var(--scan-muted); }
+.scanner-tips h3 { font-weight: 700; font-size: 13px; margin-bottom: 4px; color: var(--scan-ink); }
+.scanner-tips p, .scanner-review-note { font-size: 12px; line-height: 1.65; }
+.scanner-review-note { color: var(--scan-muted); text-align: center; padding: 4px 12px; }
+.scanner-settings { display: inline-flex; gap: 8px; align-items: center; color: var(--scan-muted); font-size: 12px; justify-self: center; }
+.receipt-scanner button:focus-visible { outline: 3px solid #e8a13a; outline-offset: 3px; }

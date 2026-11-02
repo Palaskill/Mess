@@ -35,6 +35,7 @@ import gsap from 'gsap';
 import SpotlightCard from '@/components/reactbits/SpotlightCard';
 import ShinyText from '@/components/reactbits/ShinyText';
 import CountUp from '@/components/reactbits/CountUp';
+import { useLanguage } from '@/lib/i18n';
 
 interface ReceiptScannerModalProps {
   isOpen: boolean;
@@ -51,6 +52,9 @@ export default function ReceiptScannerModal({
   participants,
   menuItems = [],
 }: ReceiptScannerModalProps) {
+  const { language } = useLanguage();
+  const copy = language === 'ar' ? { title: 'مسح الفاتورة', subtitle: 'صوّر الفاتورة ثم راجع الأصناف.', camera: 'التقاط صورة', cameraHint: 'صوّر الفاتورة كاملة', gallery: 'اختيار صورة', galleryHint: 'من الصور أو لقطة شاشة', tips: 'لنتيجة أوضح', tip: 'ضع الفاتورة على سطح مستوٍ مع إضاءة جيدة، وتأكد من وضوح الأسعار.', review: 'راجع الأصناف والأسعار قبل إضافتها.', ready: 'المسح متاح، لا حاجة إلى إعداد.', settings: 'إعدادات المسح', close: 'إغلاق' } : language === 'en' ? { title: 'Scan your receipt', subtitle: 'Take a photo, then check the items.', camera: 'Take a photo', cameraHint: 'Capture the whole receipt', gallery: 'Choose an image', galleryHint: 'Photo library or screenshot', tips: 'For a clearer scan', tip: 'Lay the receipt flat in good light and keep all prices in frame.', review: 'Check the items and prices before adding them.', ready: 'Scanning is ready. No setup needed.', settings: 'Scan settings', close: 'Close' } : { title: 'Scanner l’addition', subtitle: 'Photographiez le ticket, puis vérifiez les articles.', camera: 'Prendre une photo', cameraHint: 'Cadrez le ticket en entier', gallery: 'Choisir une image', galleryHint: 'Galerie photo ou capture d’écran', tips: 'Pour une lecture nette', tip: 'Posez le ticket à plat, dans un endroit bien éclairé, avec tous les prix visibles.', review: 'Vérifiez les articles et les prix avant de les ajouter.', ready: 'Le scan est prêt. Aucun réglage nécessaire.', settings: 'Réglages du scan', close: 'Fermer' };
+  const dialogRef = useRef<HTMLDivElement>(null);
   const [step, setStep] = useState<'upload' | 'analyzing' | 'need_key' | 'wizard' | 'review'>('upload');
   const [wizardIndex, setWizardIndex] = useState<number>(0);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -67,6 +71,25 @@ export default function ReceiptScannerModal({
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (!isOpen || !mounted) return;
+    const previous = document.activeElement as HTMLElement | null;
+    const root = dialogRef.current;
+    const focusable = () => Array.from(root?.querySelectorAll<HTMLElement>('button:not(:disabled), input:not([type="hidden"]):not(:disabled), a[href], select, textarea, [tabindex="0"]') || []).filter(el => el.getClientRects().length > 0);
+    focusable()[0]?.focus();
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && step !== 'analyzing') { event.preventDefault(); onClose(); }
+      if (event.key !== 'Tab') return;
+      const nodes = focusable();
+      if (!nodes.length) { event.preventDefault(); root?.focus(); return; }
+      const first = nodes[0], last = nodes[nodes.length - 1];
+      if (event.shiftKey && (document.activeElement === first || !root?.contains(document.activeElement))) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && (document.activeElement === last || !root?.contains(document.activeElement))) { event.preventDefault(); first.focus(); }
+    };
+    root?.addEventListener('keydown', handleKey);
+    return () => { root?.removeEventListener('keydown', handleKey); previous?.focus(); };
+  }, [isOpen, mounted, step, onClose]);
 
   // Prevent background scroll and avoid any viewport displacement
   useEffect(() => {
@@ -85,7 +108,7 @@ export default function ReceiptScannerModal({
 
   // GSAP micro-animation when moving between articles in wizard
   useEffect(() => {
-    if (step === 'wizard' && wizardCardRef.current) {
+    if (step === 'wizard' && wizardCardRef.current && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       gsap.fromTo(
         wizardCardRef.current,
         { scale: 0.96, opacity: 0.5, y: 6 },
@@ -426,15 +449,18 @@ export default function ReceiptScannerModal({
 
   return createPortal(
     <div
+      ref={dialogRef}
+      tabIndex={-1}
       role="dialog"
+      aria-labelledby="receipt-scanner-title"
       aria-modal="true"
-      className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/85 backdrop-blur-md animate-fade-in"
+      className="receipt-scanner fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/85 backdrop-blur-md animate-fade-in"
       onClick={(e) => {
         if (e.target === e.currentTarget && step !== 'analyzing') onClose();
       }}
     >
       <div
-        className="w-full max-w-lg bg-slate-900 border-t sm:border border-slate-700/80 rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 shadow-2xl animate-slide-up max-h-[92dvh] flex flex-col overflow-hidden pb-[max(5rem,env(safe-area-inset-bottom))] sm:pb-6"
+        className="scanner-sheet w-full max-w-lg bg-slate-900 border-t sm:border border-slate-700/80 rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 shadow-2xl animate-slide-up max-h-[92dvh] flex flex-col overflow-hidden pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:pb-6"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Grab handle for mobile */}
@@ -447,22 +473,11 @@ export default function ReceiptScannerModal({
               <Sparkles className="w-5 h-5 text-amber-300" />
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-black text-white tracking-tight flex items-center gap-2">
-                <span>Scanner l&apos;Addition</span>
-                {isServerConfigured ? (
-                  <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
-                    ✨ Pro Actif
-                  </span>
-                ) : (
-                  <span className="text-[10px] uppercase font-extrabold px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30">
-                    Gemini Vision
-                  </span>
-                )}
-              </h2>
+              <h2 id="receipt-scanner-title" className="scanner-title">{copy.title}</h2>
               <p className="text-xs text-slate-400">
                 {step === 'wizard'
                   ? 'Affectez chaque article à un ami un par un'
-                  : 'Photo du ticket ➔ Recréation automatique'}
+                  : copy.subtitle}
               </p>
             </div>
           </div>
@@ -494,6 +509,7 @@ export default function ReceiptScannerModal({
 
             <button
               type="button"
+              aria-label={copy.close}
               onClick={onClose}
               disabled={step === 'analyzing'}
               className="w-9 h-9 rounded-full bg-slate-800 active:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition-all cursor-pointer"
@@ -522,7 +538,7 @@ export default function ReceiptScannerModal({
 
         {/* Global Error Banner */}
         {errorMsg && (
-          <div className="mb-3.5 p-3 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs font-semibold flex items-center gap-2 shrink-0">
+          <div role="alert" className="mb-3.5 p-3 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs font-semibold flex items-center gap-2 shrink-0">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{errorMsg}</span>
           </div>
@@ -532,78 +548,22 @@ export default function ReceiptScannerModal({
         <div className="flex-1 overflow-y-auto overscroll-contain pr-0.5" data-lenis-prevent>
           {/* STEP 1: UPLOAD / CAMERA SELECTION */}
           {step === 'upload' && (
-            <div className="space-y-4 py-2">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => cameraInputRef.current?.click()}
-                  className="flex flex-col items-center justify-center gap-3 p-6 rounded-3xl bg-blue-600/15 hover:bg-blue-600/25 active:bg-blue-600/35 border-2 border-dashed border-blue-500/40 hover:border-blue-500 active:scale-98 transition-all min-h-[160px] touch-manipulation cursor-pointer group text-center"
-                >
-                  <div className="w-14 h-14 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-600/30 group-hover:scale-110 transition-transform">
-                    <Camera className="w-7 h-7" />
-                  </div>
-                  <div>
-                    <span className="block font-bold text-sm text-white">Prendre une Photo</span>
-                    <span className="block text-xs text-slate-400 mt-0.5">Appareil photo iPhone / Android</span>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="flex flex-col items-center justify-center gap-3 p-6 rounded-3xl bg-slate-800/60 hover:bg-slate-800 active:bg-slate-750 border-2 border-dashed border-slate-700 hover:border-slate-600 active:scale-98 transition-all min-h-[160px] touch-manipulation cursor-pointer group text-center"
-                >
-                  <div className="w-14 h-14 rounded-2xl bg-slate-700 text-slate-200 flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
-                    <Upload className="w-7 h-7" />
-                  </div>
-                  <div>
-                    <span className="block font-bold text-sm text-white">Choisir une Image</span>
-                    <span className="block text-xs text-slate-400 mt-0.5">Galerie photo ou capture d&apos;écran</span>
-                  </div>
-                </button>
-              </div>
-
-              {/* Server Pro Status Badge */}
-              {isServerConfigured && (
-                <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 flex items-center gap-3 text-xs text-emerald-300">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0 font-bold text-sm">
-                    ✨
-                  </div>
-                  <div className="leading-tight">
-                    <span className="font-bold text-emerald-200 block">Compte Gemini Pro Connecté</span>
-                    <span className="text-[11px] text-emerald-400/80">
-                      L&apos;IA est prise en charge par l&apos;hôte. Prenez simplement la photo de l&apos;addition !
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {/* Instructions / Tips Card */}
-              <div className="p-4 rounded-2xl bg-slate-800/40 border border-slate-700/60 text-xs text-slate-400 space-y-2">
-                <span className="font-bold text-slate-300 block">💡 Conseils pour un scan parfait :</span>
-                <ul className="space-y-1 list-disc list-inside text-[11px] leading-relaxed">
-                  <li>Posez l&apos;addition bien à plat avec un bon éclairage.</li>
-                  <li>Une fois la photo prise, le système vous demandera <strong>article par article à qui l&apos;affecter</strong> (avec option Passer).</li>
-                </ul>
-              </div>
-
-              {/* API Key management shortcut */}
-              <div className="flex items-center justify-between pt-2 text-xs">
-                <button
-                  type="button"
-                  onClick={() => setStep('need_key')}
-                  className="text-slate-400 hover:text-blue-400 flex items-center gap-1.5 transition-colors cursor-pointer text-[11px]"
-                >
-                  <Key className="w-3.5 h-3.5" />
-                  <span>
-                    {isServerConfigured
-                      ? 'Compte Serveur Pro actif'
-                      : geminiApiKey
-                      ? 'Modifier la clé Gemini'
-                      : 'Activer avec mon abonnement Pro'}
-                  </span>
-                </button>
-              </div>
+            <div className="scanner-upload">
+              <div className="scanner-steps" aria-hidden="true"><span>01 · {copy.camera}</span><ArrowRight size={14} /><span>02 · {language === 'ar' ? 'مراجعة' : language === 'en' ? 'Review' : 'Vérification'}</span></div>
+              <button type="button" onClick={() => cameraInputRef.current?.click()} className="scanner-choice scanner-camera">
+                <span className="scanner-choice-icon"><Camera aria-hidden="true" /></span>
+                <span className="scanner-choice-copy"><strong>{copy.camera}</strong><span>{copy.cameraHint}</span></span>
+                <ArrowRight aria-hidden="true" className="rtl:rotate-180" size={18} />
+              </button>
+              <button type="button" onClick={() => fileInputRef.current?.click()} className="scanner-choice scanner-gallery">
+                <span className="scanner-choice-icon"><Upload aria-hidden="true" /></span>
+                <span className="scanner-choice-copy"><strong>{copy.gallery}</strong><span>{copy.galleryHint}</span></span>
+                <ArrowRight aria-hidden="true" className="rtl:rotate-180" size={18} />
+              </button>
+              {isServerConfigured && <p className="scanner-ready"><CheckCircle2 aria-hidden="true" size={18} /><span>{copy.ready}</span></p>}
+              <div className="scanner-tips"><Receipt aria-hidden="true" size={20} /><div><h3>{copy.tips}</h3><p>{copy.tip}</p></div></div>
+              <p className="scanner-review-note">{copy.review}</p>
+              {!isServerConfigured && <button type="button" onClick={() => setStep('need_key')} className="scanner-settings"><Key aria-hidden="true" size={16} />{copy.settings}</button>}
             </div>
           )}
 

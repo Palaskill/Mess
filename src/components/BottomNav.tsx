@@ -2,9 +2,11 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useLanguage } from '@/lib/i18n';
 
 export default function BottomNav() {
   const pathname = usePathname();
+  const { t } = useLanguage();
 
   // Hide BottomNav on active session pages so it doesn't collide with session tabs and sticky order buttons
   if (pathname.startsWith('/session/')) {
@@ -14,13 +16,13 @@ export default function BottomNav() {
   const navItems = [
     {
       href: '/',
-      label: 'Home',
+      label: t.nav.home,
       icon: '🏠',
       isActive: pathname === '/',
     },
     {
       href: '/admin',
-      label: 'Admin',
+      label: t.nav.admin,
       icon: '🔧',
       isActive: pathname === '/admin' || pathname.startsWith('/admin/'),
     },

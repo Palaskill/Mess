@@ -25,6 +25,7 @@ import { formatCurrency } from '@/lib/utils';
 import SpotlightCard from '@/components/reactbits/SpotlightCard';
 import ShinyText from '@/components/reactbits/ShinyText';
 import CountUp from '@/components/reactbits/CountUp';
+import { useLanguage } from '@/lib/i18n';
 
 interface BillTabProps {
   sessionId: string;
@@ -45,6 +46,7 @@ export default function BillTab({
   participants,
   assignments,
 }: BillTabProps) {
+  const { t } = useLanguage();
   const [copied, setCopied] = useState(false);
   const [isPending, startTransition] = useTransition();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -158,33 +160,33 @@ export default function BillTab({
 
   // Generate formatted text breakdown
   const generateSummaryText = () => {
-    let text = `🍻 *${sessionName} — Addition & Partage*\n\n`;
+    let text = `🍻 *${sessionName} — ${t.bill.shareHeader}*\n\n`;
 
     finalBills.forEach((b) => {
       text += `👤 *${b.participant.name}*: ${formatCurrency(b.grandTotal)}`;
       if (b.tipAmount > 0) {
-        text += ` (dont ${formatCurrency(b.tipAmount)} pourboire)`;
+        text += ` (${t.bill.tip}: ${formatCurrency(b.tipAmount)})`;
       }
       text += '\n';
       b.items.forEach((item) => {
         text += `   • ${item.label} (${formatCurrency(item.amount)})\n`;
       });
       if (b.tipAmount > 0) {
-        text += `   • 💵 Pourboire (${formatCurrency(b.tipAmount)})\n`;
+        text += `   • 💵 ${t.bill.tip} (${formatCurrency(b.tipAmount)})\n`;
       }
       text += '\n';
     });
 
     text += `──────────────\n`;
-    text += `💰 *Sous-total*: ${formatCurrency(total)}\n`;
+    text += `💰 *${t.bill.shareSubtotal}*: ${formatCurrency(total)}\n`;
     if (tipAmount > 0) {
-      text += `💵 *Pourboire*: ${formatCurrency(tipAmount)}\n`;
+      text += `💵 *${t.bill.shareTip}*: ${formatCurrency(tipAmount)}\n`;
     }
-    text += `🧾 *Grand Total*: ${formatCurrency(grandTotalWithTip)}\n`;
+    text += `🧾 *${t.bill.shareGrandTotal}*: ${formatCurrency(grandTotalWithTip)}\n`;
     if (unassignedAmount > 0) {
-      text += `⚠️ *Non affecté sur la table*: ${formatCurrency(unassignedAmount)}\n`;
+      text += `⚠️ *${t.bill.shareUnassigned}*: ${formatCurrency(unassignedAmount)}\n`;
     }
-    text += `\nPartagé via MEss 🍺`;
+    text += `\n${t.bill.shareFooter}`;
     return text;
   };
 
@@ -227,10 +229,10 @@ export default function BillTab({
         <div>
           <h2 className="text-base font-bold text-white flex items-center gap-2">
             <Wallet className="w-4 h-4 text-emerald-400" />
-            <span>Who Pays What</span>
+            <span>{t.bill.whoPaysWhat}</span>
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
-            Real-time split based on individual & shared items
+            {t.bill.realTimeSplit}
           </p>
         </div>
 
@@ -241,12 +243,12 @@ export default function BillTab({
           {copied ? (
             <>
               <Check className="w-4 h-4 text-emerald-300" />
-              <span>Copied!</span>
+              <span>{t.bill.copied}</span>
             </>
           ) : (
             <>
               <Share2 className="w-4 h-4" />
-              <span>Share Tab</span>
+              <span>{t.bill.shareTab}</span>
             </>
           )}
         </button>
@@ -258,10 +260,10 @@ export default function BillTab({
           <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
           <div>
             <h4 className="text-sm font-bold text-amber-300">
-              {formatCurrency(unassignedAmount)} non affecté sur la table !
+              {formatCurrency(unassignedAmount)} {t.bill.unassignedAlert}
             </h4>
             <p className="text-xs text-amber-200/80 mt-0.5">
-              Certaines consommations n&apos;ont pas encore été attribuées. Rendez-vous dans l&apos;onglet Commandes.
+              {t.session.unassignedBadge}
             </p>
           </div>
         </div>
@@ -273,10 +275,10 @@ export default function BillTab({
           <Scale className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
           <div>
             <h4 className="text-sm font-bold text-amber-300">
-              {pendingWeightOrders.length} article(s) au grammage sans prix défini (0 DT)
+              {pendingWeightOrders.length} {t.bill.weightAlert}
             </h4>
             <p className="text-xs text-amber-200/80 mt-0.5">
-              Rendez-vous dans l&apos;onglet <strong>Commandes</strong> pour ajuster le montant exact ou le poids dès réception de l&apos;addition.
+              {t.orders.weightPending}
             </p>
           </div>
         </div>
@@ -290,7 +292,7 @@ export default function BillTab({
             type="button"
             disabled={isClosed}
             onClick={() => (!isClosed && (showTipSection ? setShowTipSection(false) : handleOpenTip()))}
-            className={`w-full flex items-center justify-between p-4 text-left transition-colors ${
+            className={`w-full flex items-center justify-between p-4 text-start transition-colors ${
               isClosed ? 'cursor-default opacity-90' : 'hover:bg-slate-800/80 active:bg-slate-800 cursor-pointer'
             }`}
           >
@@ -300,14 +302,14 @@ export default function BillTab({
               </div>
               <div>
                 <span className="font-bold text-sm text-white block leading-tight">
-                  Pourboire
+                  {t.bill.tip}
                 </span>
                 <span className="text-[11px] text-slate-400">
                   {tipAmount > 0
-                    ? `${formatCurrency(tipAmount)} • ${tipParticipantIds.length} ami${tipParticipantIds.length !== 1 ? 's' : ''}`
+                    ? `${formatCurrency(tipAmount)} • ${tipParticipantIds.length} ${t.session.friendsSeated}`
                     : isClosed
-                    ? 'Aucun pourboire ajouté'
-                    : 'Gratification optionnelle pour le service'}
+                    ? '---'
+                    : t.bill.tipOptional}
                 </span>
               </div>
             </div>
@@ -333,15 +335,15 @@ export default function BillTab({
               <div className="pt-3">
                 <div className="flex items-center justify-between mb-2">
                   <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                    Montant du pourboire (DT)
+                    {t.bill.tipAmount}
                   </label>
                   {tipAmount > 0 && (
                     <button
                       type="button"
                       onClick={handleClearTip}
-                      className="text-[11px] font-semibold text-rose-400 hover:text-rose-300"
+                      className="text-[11px] font-semibold text-rose-400 hover:text-rose-300 cursor-pointer"
                     >
-                      Supprimer pourboire
+                      {t.bill.removeTip}
                     </button>
                   )}
                 </div>
@@ -355,7 +357,7 @@ export default function BillTab({
                         key={amt}
                         type="button"
                         onClick={() => handleSelectPreset(amt)}
-                        className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition-all min-h-[44px] touch-manipulation active:scale-95 ${
+                        className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition-all min-h-[44px] touch-manipulation active:scale-95 cursor-pointer ${
                           isSelected
                             ? 'bg-emerald-600 text-white shadow-md ring-2 ring-emerald-400/40'
                             : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
@@ -382,7 +384,7 @@ export default function BillTab({
                         setTipParticipantIds(participants.map((p) => p.id));
                       }
                     }}
-                    placeholder="Montant libre (ex: 3.500)"
+                    placeholder="ex: 3.500"
                     className="flex-1 px-4 py-3 rounded-2xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 text-base font-bold min-h-[46px]"
                   />
                 </div>
@@ -390,7 +392,7 @@ export default function BillTab({
                 {tipAmount > 0 && (
                   <p className="mt-2 text-sm font-extrabold text-emerald-400 flex items-center gap-1.5">
                     <span>💵</span>
-                    <span>Total Pourboire : {formatCurrency(tipAmount)}</span>
+                    <span>{t.bill.tip} : {formatCurrency(tipAmount)}</span>
                   </p>
                 )}
               </div>
@@ -400,23 +402,23 @@ export default function BillTab({
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                      <span>👥</span> Qui participe au pourboire ?
+                      <span>👥</span> {t.bill.whoTips}
                     </label>
                     <div className="flex items-center gap-2 text-xs">
                       <button
                         type="button"
                         onClick={selectAllForTip}
-                        className="text-blue-400 hover:text-blue-300 font-bold px-2 py-1 min-h-[36px] flex items-center touch-manipulation"
+                        className="text-blue-400 hover:text-blue-300 font-bold px-2 py-1 min-h-[36px] flex items-center touch-manipulation cursor-pointer"
                       >
-                        Tous
+                        {t.bill.all}
                       </button>
                       <span className="text-slate-600">•</span>
                       <button
                         type="button"
                         onClick={clearAllForTip}
-                        className="text-slate-400 hover:text-slate-300 font-bold px-2 py-1 min-h-[36px] flex items-center touch-manipulation"
+                        className="text-slate-400 hover:text-slate-300 font-bold px-2 py-1 min-h-[36px] flex items-center touch-manipulation cursor-pointer"
                       >
-                        Aucun
+                        {t.bill.none}
                       </button>
                     </div>
                   </div>
@@ -429,7 +431,7 @@ export default function BillTab({
                           key={p.id}
                           type="button"
                           onClick={() => toggleTipParticipant(p.id)}
-                          className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl text-xs font-semibold transition-all min-h-[40px] touch-manipulation active:scale-95 ${
+                          className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl text-xs font-semibold transition-all min-h-[40px] touch-manipulation active:scale-95 cursor-pointer ${
                             isSelected
                               ? 'bg-emerald-600 text-white ring-2 ring-emerald-400/40 shadow-sm'
                               : 'bg-slate-800 text-slate-400 border border-slate-700 hover:text-white'
@@ -451,14 +453,14 @@ export default function BillTab({
                     <div className="mt-3 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
                       <div className="flex items-center justify-between text-xs">
                         <span className="text-emerald-300 font-semibold">
-                          Part par participant :
+                          {t.bill.eachTipperPays}
                         </span>
                         <span className="text-emerald-400 font-extrabold text-sm">
                           {formatCurrency(tipPerPerson)}
                         </span>
                       </div>
                       <p className="text-[11px] text-emerald-200/60 mt-1">
-                        {formatCurrency(tipAmount)} ÷ {tipParticipantIds.length} = {formatCurrency(tipPerPerson)} par personne
+                        {formatCurrency(tipAmount)} ÷ {tipParticipantIds.length} = {formatCurrency(tipPerPerson)}
                       </p>
                     </div>
                   )}
@@ -475,10 +477,10 @@ export default function BillTab({
           <div className="flex items-center justify-between text-xs">
             <span className="font-bold text-slate-300 flex items-center gap-1.5">
               <span>📊</span>
-              <span>Répartition de l&apos;Addition</span>
+              <span>{t.bill.visualSplit}</span>
             </span>
             <span className="text-[11px] font-semibold text-emerald-400">
-              Total {formatCurrency(grandTotalWithTip)}
+              {t.bill.grandTotal} {formatCurrency(grandTotalWithTip)}
             </span>
           </div>
 
@@ -534,9 +536,9 @@ export default function BillTab({
       {participants.length === 0 ? (
         <div className="text-center py-12 px-4 rounded-2xl border border-dashed border-slate-700 bg-slate-800/30">
           <div className="text-4xl mb-3">👥</div>
-          <h3 className="text-base font-bold text-white mb-1">No friends added</h3>
+          <h3 className="text-base font-bold text-white mb-1">{t.friends.noFriends}</h3>
           <p className="text-xs text-slate-400">
-            Add friends in the Friends tab to see the bill split.
+            {t.friends.noFriendsDesc}
           </p>
         </div>
       ) : (
@@ -562,8 +564,8 @@ export default function BillTab({
                       {bill.participant.name}
                     </h3>
                     <p className="text-[11px] text-slate-400">
-                      {bill.items.length} {bill.items.length === 1 ? 'item' : 'items'}
-                      {bill.tipAmount > 0 && ' + tip'}
+                      {bill.items.length} {bill.items.length === 1 ? t.common.item : t.common.items}
+                      {bill.tipAmount > 0 && ` + ${t.bill.tip}`}
                     </p>
                   </div>
                 </div>
@@ -577,7 +579,7 @@ export default function BillTab({
                   />
                   {bill.tipAmount > 0 && (
                     <span className="block text-[10px] text-slate-400">
-                      incl. {formatCurrency(bill.tipAmount)} tip
+                      +{formatCurrency(bill.tipAmount)} {t.bill.tip}
                     </span>
                   )}
                 </div>
@@ -591,7 +593,7 @@ export default function BillTab({
                       key={idx}
                       className="flex items-center justify-between text-xs text-slate-300"
                     >
-                      <span className="truncate pr-2 font-medium">
+                      <span className="truncate pr-2 rtl:pr-0 rtl:pl-2 font-medium">
                         {item.label}
                       </span>
                       <span className="font-semibold text-slate-400 shrink-0 tabular-nums">
@@ -602,7 +604,7 @@ export default function BillTab({
                   {bill.tipAmount > 0 && (
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-emerald-300/80 font-medium flex items-center gap-1">
-                        <span>💵</span> Pourboire
+                        <span>💵</span> {t.bill.tip}
                       </span>
                       <span className="font-semibold text-emerald-400 shrink-0 tabular-nums">
                         {formatCurrency(bill.tipAmount)}
@@ -612,7 +614,7 @@ export default function BillTab({
                 </div>
               ) : (
                 <div className="pt-2.5 border-t border-dashed border-slate-700/60 text-xs text-slate-500 italic">
-                  Aucun article affecté
+                  {t.bill.noItems}
                 </div>
               )}
             </SpotlightCard>
@@ -626,7 +628,7 @@ export default function BillTab({
         className="total-card p-5 rounded-3xl bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700 shadow-2xl space-y-3"
       >
         <div className="flex items-center justify-between text-slate-300 text-sm">
-          <span>Subtotal ({orders.length} orders)</span>
+          <span>{t.bill.subtotal} ({orders.length} {t.orders.placedCount})</span>
           <span className="font-bold">{formatCurrency(total)}</span>
         </div>
 
@@ -634,7 +636,7 @@ export default function BillTab({
           <div className="flex items-center justify-between text-emerald-400 text-sm">
             <span className="flex items-center gap-1">
               <span>💵</span>
-              <span>Tip</span>
+              <span>{t.bill.tip}</span>
             </span>
             <span className="font-bold">+{formatCurrency(tipAmount)}</span>
           </div>
@@ -642,7 +644,7 @@ export default function BillTab({
 
         {unassignedAmount > 0 && (
           <div className="flex items-center justify-between text-amber-400 text-xs font-semibold">
-            <span>⚠️ Unassigned on table</span>
+            <span>⚠️ {t.bill.unassignedTable}</span>
             <span>{formatCurrency(unassignedAmount)}</span>
           </div>
         )}
@@ -650,7 +652,7 @@ export default function BillTab({
         <div className="pt-3 border-t border-slate-700/80 flex items-center justify-between">
           <div>
             <span className="text-xs uppercase tracking-wider font-extrabold text-slate-400 block">
-              <ShinyText text="Grand Total" />
+              <ShinyText text={t.bill.grandTotal} />
             </span>
             <CountUp
               to={grandTotalWithTip}
@@ -667,12 +669,12 @@ export default function BillTab({
               className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-slate-700 hover:bg-slate-600 active:bg-slate-650 text-slate-200 text-xs font-bold transition-all active:scale-95 border border-slate-600/70 min-h-[42px] cursor-pointer"
             >
               <Lock className="w-3.5 h-3.5 text-slate-400" />
-              <span>{isPending ? 'Clôture...' : 'Clôturer la table'}</span>
+              <span>{isPending ? t.bill.closingTab : t.bill.closeTab}</span>
             </button>
           ) : (
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700 text-xs font-bold">
               <Lock className="w-3.5 h-3.5 text-slate-400" />
-              <span>Lecture seule</span>
+              <span>{t.bill.readOnlyBadge}</span>
             </span>
           )}
         </div>

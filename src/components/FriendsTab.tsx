@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { UserPlus, Users, Trash2, X, Lock } from 'lucide-react';
 import { Participant, PARTICIPANT_COLORS, Assignment } from '@/types';
 import { addParticipant, removeParticipant } from '@/lib/actions';
+import { useLanguage } from '@/lib/i18n';
 
 interface FriendsTabProps {
   sessionId: string;
@@ -21,6 +22,7 @@ export default function FriendsTab({
   setParticipants,
   setAssignments,
 }: FriendsTabProps) {
+  const { t, language } = useLanguage();
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [name, setName] = useState('');
   const [selectedColor, setSelectedColor] = useState(PARTICIPANT_COLORS[0]);
@@ -90,7 +92,7 @@ export default function FriendsTab({
   };
 
   const handleRemove = async (id: string, friendName: string) => {
-    if (confirm(`Remove ${friendName} from this session? Their assigned items will be unassigned.`)) {
+    if (confirm(`${t.common.delete} ${friendName} ?`)) {
       // ⚡ INSTANT OPTIMISTIC UI: remove from UI immediately
       const prevParticipants = participants;
       setParticipants?.((prev) => prev.filter((p) => p.id !== id));
@@ -101,11 +103,11 @@ export default function FriendsTab({
           const res = await removeParticipant(id, sessionId);
           if (!res.success) {
             setParticipants?.(prevParticipants);
-            alert(res.error || `Failed to remove ${friendName}`);
+            alert(res.error || t.common.error);
           }
         } catch (err: any) {
           setParticipants?.(prevParticipants);
-          alert(err?.message || `Failed to remove ${friendName}`);
+          alert(err?.message || t.common.error);
         }
       });
     }
@@ -118,10 +120,10 @@ export default function FriendsTab({
         <div>
           <h2 className="text-base font-bold text-white flex items-center gap-2">
             <Users className="w-4 h-4 text-blue-400" />
-            <span>Friends at the Table</span>
+            <span>{t.friends.title}</span>
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
-            {participants.length} {participants.length === 1 ? 'person' : 'people'} joined
+            {participants.length} {t.session.friendsSeated}
           </p>
         </div>
 
@@ -134,12 +136,12 @@ export default function FriendsTab({
             className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white text-xs sm:text-sm font-bold shadow-lg shadow-blue-600/30 active:scale-95 transition-all min-h-[44px] touch-manipulation cursor-pointer"
           >
             <UserPlus className="w-4 h-4" />
-            <span>Add Friend</span>
+            <span>{t.friends.addFriend}</span>
           </button>
         ) : (
           <span className="px-3 py-1.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700/80 text-xs font-semibold flex items-center gap-1.5">
             <Lock className="w-3.5 h-3.5 text-slate-400" />
-            <span>Lecture seule</span>
+            <span>{t.session.readOnlyBadge}</span>
           </span>
         )}
       </div>
@@ -150,9 +152,9 @@ export default function FriendsTab({
           <div className="w-16 h-16 mx-auto mb-3 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center justify-center text-3xl shadow-inner">
             👋
           </div>
-          <h3 className="text-base font-bold text-white mb-1">No friends added yet</h3>
+          <h3 className="text-base font-bold text-white mb-1">{t.friends.noFriends}</h3>
           <p className="text-xs text-slate-400 mb-4 max-w-xs mx-auto">
-            Add everyone sitting at your table. Friends can also join later and jump into shared food!
+            {t.friends.noFriendsDesc}
           </p>
           {!isClosed && (
             <button
@@ -160,7 +162,7 @@ export default function FriendsTab({
               className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-600/20 active:scale-95 transition-all cursor-pointer min-h-[40px]"
             >
               <UserPlus className="w-4 h-4" />
-              <span>Add First Friend</span>
+              <span>{t.friends.addFirstFriend}</span>
             </button>
           )}
         </div>
@@ -181,7 +183,7 @@ export default function FriendsTab({
                 <div>
                   <h4 className="font-bold text-white text-sm">{p.name}</h4>
                   <span className="text-[11px] text-slate-400">
-                    Joined{' '}
+                    {t.friends.seated}{' '}
                     {new Date(p.joined_at).toLocaleTimeString([], {
                       hour: '2-digit',
                       minute: '2-digit',
@@ -194,7 +196,7 @@ export default function FriendsTab({
                 <button
                   onClick={() => handleRemove(p.id, p.name)}
                   disabled={isPending}
-                  aria-label={`Remove ${p.name}`}
+                  aria-label={`${t.common.delete} ${p.name}`}
                   className="w-11 h-11 rounded-xl flex items-center justify-center text-slate-400 hover:text-rose-400 active:text-rose-500 hover:bg-rose-500/10 active:bg-rose-500/20 active:scale-90 transition-all touch-manipulation cursor-pointer"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -226,7 +228,7 @@ export default function FriendsTab({
             <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
                 <UserPlus className="w-5 h-5 text-blue-400" />
-                <span>Add Friend</span>
+                <span>{t.friends.modalTitle}</span>
               </h3>
               <button
                 type="button"
@@ -247,7 +249,7 @@ export default function FriendsTab({
             <form onSubmit={handleAddSubmit} className="space-y-5">
               <div>
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                  Friend&apos;s Name *
+                  {t.friends.friendName} *
                 </label>
                 <input
                   type="text"
@@ -258,14 +260,14 @@ export default function FriendsTab({
                   autoComplete="off"
                   autoCorrect="off"
                   spellCheck={false}
-                  placeholder="e.g. Karim, Sarah, Alex"
+                  placeholder={t.friends.namePlaceholder}
                   className="w-full px-4 py-3.5 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 text-base min-h-[48px]"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                  Pick an Avatar Color
+                  {t.friends.friendColor}
                 </label>
                 <div className="flex flex-wrap gap-2.5">
                   {PARTICIPANT_COLORS.map((color) => (
@@ -295,7 +297,7 @@ export default function FriendsTab({
                   disabled={isPending || !name.trim()}
                   className="w-full py-4 px-4 rounded-2xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-bold text-base shadow-lg shadow-blue-600/30 active:scale-98 transition-all disabled:opacity-50 min-h-[52px] touch-manipulation"
                 >
-                  {isPending ? 'Adding...' : 'Add Friend'}
+                  {isPending ? t.friends.adding : t.friends.addFriend}
                 </button>
               </div>
             </form>

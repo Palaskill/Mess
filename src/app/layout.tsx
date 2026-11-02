@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import BottomNav from '@/components/BottomNav';
 import SmoothScroll from '@/components/SmoothScroll';
+import { LanguageProvider } from '@/lib/i18n';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -41,9 +42,9 @@ export default function RootLayout({
             __html: `
               (function() {
                 try {
-                  var saved = localStorage.getItem('mess-theme') || 'auto';
+                  var savedTheme = localStorage.getItem('mess-theme') || 'auto';
                   var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                  var isDark = saved === 'dark' || (saved === 'auto' && prefersDark);
+                  var isDark = savedTheme === 'dark' || (savedTheme === 'auto' && prefersDark);
                   if (isDark) {
                     document.documentElement.classList.add('dark');
                     document.documentElement.classList.remove('light');
@@ -51,6 +52,10 @@ export default function RootLayout({
                     document.documentElement.classList.add('light');
                     document.documentElement.classList.remove('dark');
                   }
+
+                  var savedLang = localStorage.getItem('mess-lang') || 'fr';
+                  document.documentElement.lang = savedLang;
+                  document.documentElement.dir = savedLang === 'ar' ? 'rtl' : 'ltr';
                 } catch (e) {}
               })();
             `,
@@ -58,12 +63,14 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-full bg-slate-900 text-slate-100 flex flex-col antialiased selection:bg-blue-500/30">
-        <SmoothScroll>
-          <main className="flex-1 pb-28 pt-[env(safe-area-inset-top)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
-            {children}
-          </main>
-          <BottomNav />
-        </SmoothScroll>
+        <LanguageProvider>
+          <SmoothScroll>
+            <main className="flex-1 pb-28 pt-[env(safe-area-inset-top)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
+              {children}
+            </main>
+            <BottomNav />
+          </SmoothScroll>
+        </LanguageProvider>
       </body>
     </html>
   );

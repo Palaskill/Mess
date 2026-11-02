@@ -7,6 +7,7 @@ import { Session } from '@/types';
 import { deleteSession } from '@/lib/actions';
 import { timeAgo } from '@/lib/utils';
 import SpotlightCard from '@/components/reactbits/SpotlightCard';
+import { useLanguage } from '@/lib/i18n';
 
 interface SessionCardProps {
   session: Session & {
@@ -16,6 +17,7 @@ interface SessionCardProps {
 
 export default function SessionCard({ session }: SessionCardProps) {
   const router = useRouter();
+  const { t } = useLanguage();
   const [isPending, startTransition] = useTransition();
   const [showConfirm, setShowConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -125,7 +127,7 @@ export default function SessionCard({ session }: SessionCardProps) {
                   }`}
                 />
               </span>
-              {isOpen ? 'Open' : 'Closed'}
+              {isOpen ? t.session.active : t.session.closed}
             </span>
 
             <span className="text-xs text-slate-400 font-medium">
@@ -153,23 +155,23 @@ export default function SessionCard({ session }: SessionCardProps) {
               className="flex items-center gap-1.5 bg-slate-900/95 border border-slate-700 px-2.5 py-1.5 rounded-xl shadow-lg animate-fade-in"
             >
               <span className="text-xs text-slate-300 font-medium mr-1 hidden xs:inline">
-                Delete?
+                {t.common.deleteConfirm}
               </span>
               <button
                 type="button"
                 onClick={handleConfirmDelete}
                 disabled={isDeleting || isPending}
-                className="px-3 py-1.5 text-xs font-semibold bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white rounded-lg transition-colors min-h-[36px] flex items-center justify-center"
+                className="px-3 py-1.5 text-xs font-semibold bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white rounded-lg transition-colors min-h-[36px] flex items-center justify-center cursor-pointer"
               >
-                {isDeleting || isPending ? '...' : 'Yes'}
+                {isDeleting || isPending ? '...' : t.common.yes}
               </button>
               <button
                 type="button"
                 onClick={handleCancelDelete}
                 disabled={isDeleting || isPending}
-                className="px-3 py-1.5 text-xs font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg transition-colors min-h-[36px] flex items-center justify-center"
+                className="px-3 py-1.5 text-xs font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg transition-colors min-h-[36px] flex items-center justify-center cursor-pointer"
               >
-                No
+                {t.common.no}
               </button>
             </div>
           ) : (
@@ -191,17 +193,16 @@ export default function SessionCard({ session }: SessionCardProps) {
           {session.participant_count !== undefined ? (
             <span className="flex items-center gap-1.5 font-medium text-slate-300">
               <Users className="w-4 h-4 text-blue-400 shrink-0" />
-              {session.participant_count}{' '}
-              {session.participant_count === 1 ? 'person' : 'people'}
+              {session.participant_count} {t.session.friendsSeated}
             </span>
           ) : (
-            <span className="text-slate-400">Tap to view session</span>
+            <span className="text-slate-400">{t.home.tapToView}</span>
           )}
         </div>
 
         <span className="flex items-center gap-1 font-semibold text-blue-400 group-hover:text-blue-300 transition-colors">
-          <span>Ouvrir</span>
-          <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform duration-200" />
+          <span>{t.common.open}</span>
+          <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 rtl:group-hover:-translate-x-1 rtl:rotate-180 transition-transform duration-200" />
         </span>
       </div>
     </SpotlightCard>

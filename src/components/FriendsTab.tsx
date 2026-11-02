@@ -1,5 +1,7 @@
 'use client';
 
+import FriendAvatar from '@/components/FriendAvatar';
+
 import { useState, useTransition, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { UserPlus, Users, Trash2, X, Lock } from 'lucide-react';
@@ -167,12 +169,7 @@ export default function FriendsTab({
               className="friend-card flex items-center justify-between gap-3 p-4 rounded-2xl bg-slate-800/90 border border-slate-700/80 shadow-md backdrop-blur-sm transition-all"
             >
               <div className="flex items-center gap-3 min-w-0">
-                <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white text-base shadow-inner ring-2 ring-white/10"
-                  style={{ backgroundColor: p.color, boxShadow: `0 0 12px ${p.color}50` }}
-                >
-                  {p.name.charAt(0).toUpperCase()}
-                </div>
+                <FriendAvatar name={p.name} color={p.color} />
                 <div>
                   <h4 className="font-bold text-white text-sm break-words">{p.name}</h4>
                   <span className="text-xs text-slate-400">

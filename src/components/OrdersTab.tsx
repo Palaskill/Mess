@@ -1,5 +1,7 @@
 'use client';
 
+import FriendAvatar from '@/components/FriendAvatar';
+
 import { separateSharedUnits } from '@/lib/shared-orders';
 
 import { useState, useTransition, useRef, useEffect } from 'react';
@@ -958,10 +960,7 @@ export default function OrdersTab({
                                   : 'bg-slate-700/50 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
                               }`}
                             >
-                              <span
-                                className="w-2.5 h-2.5 rounded-full shrink-0"
-                                style={{ backgroundColor: p.color }}
-                              />
+                              <FriendAvatar name={p.name} color={p.color} size={28} />
                               <span>{p.name}</span>
                               {isSharing && (
                                 <span className="text-[11px] bg-blue-700/90 rounded-full px-1.5 py-0.5 font-bold">
@@ -1011,7 +1010,7 @@ export default function OrdersTab({
                         {participants.map((p) => {
                           const currentQty = orderAssignments.find((a) => a.participant_id === p.id)?.quantity || 0;
                           return <div key={p.id} className={`participant-row ${currentQty > 0 ? 'is-selected' : ''}`}>
-                            <span className="participant-name"><span className="participant-dot" style={{ backgroundColor: p.color }} />{p.name}</span>
+                            <span className="participant-name"><FriendAvatar name={p.name} color={p.color} size={28} />{p.name}</span>
                             <div className="quantity-control">
                               {!isClosed && <button type="button" aria-label={`${t.orders.adjust} ${p.name} −1`} disabled={isPending || currentQty === 0} onClick={() => handleUpdateAssignmentQty(order, p.id, currentQty - 1)}>−</button>}
                               <span className="tabular-nums" aria-live="polite">{currentQty}</span>

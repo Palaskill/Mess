@@ -1,5 +1,7 @@
 'use client';
 
+import FriendAvatar from '@/components/FriendAvatar';
+
 import { useState, useTransition, useMemo, useRef } from 'react';
 import {
   Share2,
@@ -614,12 +616,7 @@ export default function BillTab({
               {/* Person Header & Total */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-white text-base shadow-inner shrink-0"
-                    style={{ backgroundColor: bill.participant.color }}
-                  >
-                    {bill.participant.name.charAt(0).toUpperCase()}
-                  </div>
+                  <FriendAvatar name={bill.participant.name} color={bill.participant.color} />
                   <div>
                     <h3 className="font-extrabold text-white text-base">
                       {bill.participant.name}

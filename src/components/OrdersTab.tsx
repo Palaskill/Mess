@@ -121,6 +121,7 @@ export default function OrdersTab({
   // GSAP animation for orders entrance
   useGSAP(
     () => {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
       gsap.fromTo(
         '.order-card',
         { y: 18, opacity: 0 },
@@ -778,9 +779,9 @@ export default function OrdersTab({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="orders-workspace space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="orders-toolbar">
         <div>
           <h2 className="text-base font-bold text-white flex items-center gap-2">
             <UtensilsCrossed className="w-4 h-4 text-blue-400" />
@@ -792,11 +793,11 @@ export default function OrdersTab({
         </div>
 
         {!isClosed ? (
-          <div className="flex items-center gap-2">
+          <div className="orders-actions">
             <button
               type="button"
               onClick={() => setIsScannerOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-2.5 rounded-2xl bg-gradient-to-r from-blue-600/20 to-indigo-600/20 hover:from-blue-600/30 hover:to-indigo-600/30 border border-blue-500/40 text-blue-300 hover:text-white text-xs sm:text-sm font-bold shadow-sm active:scale-95 transition-all min-h-[44px] touch-manipulation cursor-pointer"
+              className="scan-action flex items-center gap-1.5 px-3 py-2.5 rounded-2xl bg-gradient-to-r from-blue-600/20 to-indigo-600/20 hover:from-blue-600/30 hover:to-indigo-600/30 border border-blue-500/40 text-blue-300 hover:text-white text-xs sm:text-sm font-bold shadow-sm active:scale-95 transition-all min-h-[44px] touch-manipulation cursor-pointer"
               title="Scanner une photo de l'addition par IA Gemini Vision"
             >
               <Camera className="w-4 h-4 text-blue-400 shrink-0" />
@@ -869,7 +870,6 @@ export default function OrdersTab({
             const totalOrderPrice = order.quantity * order.unit_price;
             const unassigned = getUnassignedQuantity(order, assignments);
             const isShared = order.split_type === 'shared';
-            const isCheese = /fromage|cheese/i.test(order.item_name);
             const isPendingWeight = Number(order.unit_price) === 0;
             const sharersCount = orderAssignments.length;
             const perSharerPrice = sharersCount > 0 ? totalOrderPrice / sharersCount : totalOrderPrice;
@@ -880,66 +880,23 @@ export default function OrdersTab({
                 spotlightColor={isShared ? 'rgba(245, 158, 11, 0.15)' : 'rgba(59, 130, 246, 0.15)'}
                 className="order-card rounded-2xl bg-slate-800/90 border border-slate-700/80 p-4 shadow-lg shadow-black/20 backdrop-blur-sm transition-all"
               >
-                {/* Order Top Bar: Item, Qty, Price, Split type */}
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-slate-700/60 border border-slate-600/40 flex items-center justify-center text-xl shrink-0">
-                      {isCheese ? '🧀' : isShared ? '🍕' : '🍺'}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-extrabold text-white text-base">
-                          {order.item_name}
-                        </h4>
-                        <span className="text-xs font-bold text-slate-400 tabular-nums">
-                          × {order.quantity}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-slate-400 mt-0.5">
-                        <span className={isPendingWeight ? 'text-amber-400 font-bold' : 'text-emerald-400 font-semibold tabular-nums'}>
-                          {isPendingWeight ? 'À peser (0 DT)' : formatCurrency(Number(order.unit_price))}
-                        </span>
-                        <span>•</span>
-                        <span
-                          className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold ${
-                            isShared
-                              ? 'bg-amber-500/20 text-amber-300'
-                              : 'bg-blue-500/20 text-blue-300'
-                          }`}
-                        >
-                          {isShared ? t.orders.foodSplit : t.orders.individual}
-                        </span>
+                <div className="order-heading">
+                  <div className="order-identity">
+                    <span className="order-symbol" aria-hidden="true"><UtensilsCrossed /></span>
+                    <div className="min-w-0">
+                      <h3 className="order-name">{order.item_name}</h3>
+                      <div className="order-meta">
+                        <span className="money">{formatCurrency(Number(order.unit_price))} × {order.quantity}</span>
+                        <span className="split-label">{isShared ? t.orders.foodSplit : t.orders.individual}</span>
                       </div>
                     </div>
                   </div>
-
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-base font-black text-white mr-1 tabular-nums">
-                      {formatCurrency(totalOrderPrice)}
-                    </span>
-                    {!isClosed && (
-                      <button
-                        type="button"
-                        onClick={() => handleOpenWeightModal(order)}
-                        className="px-2.5 py-1.5 rounded-xl bg-slate-700/80 hover:bg-slate-700 active:bg-slate-600 text-slate-200 text-xs font-semibold flex items-center gap-1 border border-slate-600/60 transition active:scale-95 touch-manipulation min-h-[40px] cursor-pointer"
-                        title="Ajuster le montant ou le grammage selon l'addition"
-                      >
-                        <Scale className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                        <span className="hidden sm:inline">{t.orders.adjust}</span>
-                      </button>
-                    )}
-                    {!isClosed && (
-                      <button
-                        onClick={() => handleDeleteOrder(order.id, order.item_name)}
-                        disabled={isPending}
-                        aria-label={t.orders.deleteOrder}
-                        className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 active:scale-95 transition-all touch-manipulation cursor-pointer"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
+                  <strong className="order-total money">{formatCurrency(totalOrderPrice)}</strong>
                 </div>
+                {!isClosed && <div className="order-tools">
+                  <button type="button" onClick={() => handleOpenWeightModal(order)} className="order-tool"><Scale aria-hidden="true" size={16} />{t.orders.adjust}</button>
+                  <button type="button" onClick={() => handleDeleteOrder(order.id, order.item_name)} disabled={isPending} aria-label={`${t.orders.deleteOrder} ${order.item_name}`} className="order-tool order-delete"><Trash2 aria-hidden="true" size={16} /></button>
+                </div>}
 
                 {/* Banner when weight/price is pending from the bill */}
                 {isPendingWeight && (
@@ -994,7 +951,8 @@ export default function OrdersTab({
                               key={p.id}
                               onClick={() => handleToggleSharer(order, p)}
                               disabled={isClosed || isPending}
-                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all min-h-[38px] active:scale-95 ${
+                              aria-pressed={isSharing}
+                              className={`sharing-chip ${isSharing ? "is-selected" : ""} flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all min-h-[44px] active:scale-95 ${
                                 isSharing
                                   ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-400/40'
                                   : 'bg-slate-700/50 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
@@ -1049,90 +1007,17 @@ export default function OrdersTab({
                         )}
                       </div>
 
-                      {/* Interactive pills for all participants to assign & tweak units in 1 tap directly on the card */}
-                      <div className="flex flex-wrap gap-2">
+                      <div className="participant-list">
                         {participants.map((p) => {
-                          const assignment = orderAssignments.find(
-                            (a) => a.participant_id === p.id
-                          );
-                          const currentQty = assignment?.quantity || 0;
-                          const hasUnits = currentQty > 0;
-
-                          return (
-                            <div
-                              key={p.id}
-                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all min-h-[38px] ${
-                                hasUnits
-                                  ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-400/40'
-                                  : 'bg-slate-700/50 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
-                              }`}
-                            >
-                              <span
-                                className="w-2.5 h-2.5 rounded-full shrink-0"
-                                style={{ backgroundColor: p.color }}
-                              />
-                              <span
-                                onClick={() => {
-                                  if (isClosed || isPending) return;
-                                  if (unassigned > 0) {
-                                    handleUpdateAssignmentQty(order, p.id, currentQty + 1);
-                                  } else if (hasUnits) {
-                                    handleUpdateAssignmentQty(order, p.id, currentQty - 1);
-                                  }
-                                }}
-                                className="cursor-pointer select-none"
-                              >
-                                {p.name}
-                              </span>
-
-                              {hasUnits && (
-                                <div className="flex items-center gap-1 ml-0.5">
-                                  {!isClosed && (
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleUpdateAssignmentQty(order, p.id, currentQty - 1);
-                                      }}
-                                      disabled={isPending}
-                                      className="w-5 h-5 rounded-full bg-blue-700 hover:bg-blue-800 active:scale-90 flex items-center justify-center font-black text-xs text-white"
-                                    >
-                                      -
-                                    </button>
-                                  )}
-                                  <span className="text-[11px] font-black bg-blue-800 rounded-full px-1.5 py-0.2">
-                                    ×{currentQty}
-                                  </span>
-                                  {!isClosed && (
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (unassigned > 0) {
-                                          handleUpdateAssignmentQty(order, p.id, currentQty + 1);
-                                        }
-                                      }}
-                                      disabled={isPending || unassigned <= 0}
-                                      className="w-5 h-5 rounded-full bg-blue-700 hover:bg-blue-800 disabled:opacity-30 active:scale-90 flex items-center justify-center font-black text-xs text-white"
-                                    >
-                                      +
-                                    </button>
-                                  )}
-                                </div>
-                              )}
-
-                              {!hasUnits && unassigned > 0 && !isClosed && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleUpdateAssignmentQty(order, p.id, 1)}
-                                  disabled={isPending}
-                                  className="w-4 h-4 rounded-full bg-slate-600 hover:bg-blue-500 hover:text-white text-slate-300 flex items-center justify-center text-[10px] font-bold"
-                                >
-                                  +
-                                </button>
-                              )}
+                          const currentQty = orderAssignments.find((a) => a.participant_id === p.id)?.quantity || 0;
+                          return <div key={p.id} className={`participant-row ${currentQty > 0 ? 'is-selected' : ''}`}>
+                            <span className="participant-name"><span className="participant-dot" style={{ backgroundColor: p.color }} />{p.name}</span>
+                            <div className="quantity-control">
+                              {!isClosed && <button type="button" aria-label={`${t.orders.adjust} ${p.name} −1`} disabled={isPending || currentQty === 0} onClick={() => handleUpdateAssignmentQty(order, p.id, currentQty - 1)}>−</button>}
+                              <span className="tabular-nums" aria-live="polite">{currentQty}</span>
+                              {!isClosed && <button type="button" aria-label={`${t.orders.adjust} ${p.name} +1`} disabled={isPending || unassigned <= 0} onClick={() => handleUpdateAssignmentQty(order, p.id, currentQty + 1)}>+</button>}
                             </div>
-                          );
+                          </div>;
                         })}
                       </div>
 

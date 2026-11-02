@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Sun, Moon, Smartphone } from 'lucide-react';
+import { useLanguage } from '@/lib/i18n';
 
 type ThemeMode = 'light' | 'dark' | 'auto';
 
@@ -14,6 +15,8 @@ export default function ThemeToggle({
   className = '',
   variant = 'segmented',
 }: ThemeToggleProps) {
+  const { language } = useLanguage();
+  const labels = language === 'fr' ? { light: 'Clair', dark: 'Sombre', auto: 'Auto' } : language === 'ar' ? { light: 'فاتح', dark: 'داكن', auto: 'تلقائي' } : { light: 'Light', dark: 'Dark', auto: 'Auto' };
   const [theme, setTheme] = useState<ThemeMode>('auto');
   const [mounted, setMounted] = useState(false);
 
@@ -69,19 +72,19 @@ export default function ThemeToggle({
       handleSelectTheme(next);
     };
 
-    const label = theme === 'dark' ? 'Dark' : theme === 'light' ? 'Light' : 'Auto';
+    const label = labels[theme];
 
     return (
       <button
         type="button"
         onClick={cycleNext}
-        title={`Current theme: ${label}. Tap to change.`}
+        aria-label={language === 'fr' ? `Thème : ${label}. Changer le thème` : language === 'ar' ? `تغيير المظهر: ${label}` : `Theme: ${label}. Change theme`}
         className={`flex items-center gap-1.5 px-3 py-2 rounded-2xl border border-slate-700/60 bg-slate-800/80 hover:bg-slate-700 active:bg-slate-650 text-xs font-semibold text-slate-200 transition-all active:scale-95 min-h-[42px] touch-manipulation shadow-sm theme-toggle-compact ${className}`}
       >
         {theme === 'dark' && <Moon className="w-3.5 h-3.5 text-blue-400 shrink-0" />}
         {theme === 'light' && <Sun className="w-3.5 h-3.5 text-amber-500 shrink-0" />}
         {theme === 'auto' && <Smartphone className="w-3.5 h-3.5 text-emerald-500 shrink-0" />}
-        <span className="text-xs capitalize font-bold">{label}</span>
+        <span className="text-xs capitalize font-bold hidden sm:inline">{label}</span>
       </button>
     );
   }

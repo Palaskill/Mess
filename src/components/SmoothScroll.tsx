@@ -1,25 +1,6 @@
-'use client';
+import { ReactNode } from 'react';
 
-import { ReactLenis } from 'lenis/react';
-import 'lenis/dist/lenis.css';
-
-interface SmoothScrollProps {
-  children: React.ReactNode;
-}
-
-export default function SmoothScroll({ children }: SmoothScrollProps) {
-  return (
-    <ReactLenis
-      root
-      options={{
-        lerp: 0.1,
-        duration: 1.2,
-        smoothWheel: true,
-        wheelMultiplier: 1,
-        touchMultiplier: 1.5,
-      }}
-    >
-      {children}
-    </ReactLenis>
-  );
+// Native scrolling respects reduced motion, keyboard navigation and mobile sheets.
+export default function SmoothScroll({ children }: { children: ReactNode }) {
+  return <>{children}</>;
 }

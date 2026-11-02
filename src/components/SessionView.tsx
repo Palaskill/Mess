@@ -161,10 +161,10 @@ export default function SessionView({
   }, 0);
 
   return (
-    <div className="min-h-full pb-36">
-      <div className="max-w-xl mx-auto px-4 pt-2 sm:pt-4">
+    <div className="session-workspace min-h-full pb-36">
+      <div className="max-w-3xl mx-auto px-4 sm:px-8 pt-4 sm:pt-8">
         {/* Top bar with back button and session info */}
-        <div className="flex items-center justify-between mb-3 pt-1">
+        <div className="session-topbar flex items-center justify-between gap-2 mb-4 pt-1">
           <Link
             href="/"
             className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-300 hover:text-white bg-slate-800/90 active:bg-slate-700 px-3.5 py-2 rounded-2xl border border-slate-700/70 shadow-sm active:scale-95 transition-all min-h-[40px] touch-manipulation group"
@@ -197,21 +197,9 @@ export default function SessionView({
         {/* Session Name Title */}
         <div className="mb-4">
           <div className="flex items-center gap-2.5">
-            <span className="text-2xl sm:text-3xl select-none" role="img" aria-hidden="true">🍻</span>
-            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight truncate flex items-center gap-2">
+
+            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight break-words">
               <span>{session.name}</span>
-              {hasPassword && (
-                <span
-                  title={isUnlocked ? t.session.unlockedOrganizer : t.session.readOnlyTitle}
-                  className={`text-xs px-2 py-0.5 rounded-full border inline-flex items-center gap-1 font-semibold ${
-                    isUnlocked
-                      ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                      : 'bg-amber-500/15 text-amber-300 border-amber-500/30'
-                  }`}
-                >
-                  {isUnlocked ? t.session.organizerBadge : t.session.readOnlyBadge}
-                </span>
-              )}
             </h1>
           </div>
           <p className="text-[11px] text-slate-400 mt-1">
@@ -259,11 +247,11 @@ export default function SessionView({
 
         {/* Unlocked Creator Banner */}
         {hasPassword && isUnlocked && !isClosed && (
-          <div className="mb-4 p-2.5 px-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between text-xs text-emerald-300 animate-fade-in shadow-sm">
+          <div className="organizer-status flex items-center justify-between gap-3 mb-4 text-xs">
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
               <span className="font-semibold">
-                {t.session.unlockedOrganizer}
+                {t.session.organizerBadge}
               </span>
             </div>
             <button
@@ -278,7 +266,7 @@ export default function SessionView({
         )}
 
         {/* 3 Main Sticky Tabs (iOS Segmented Control Style) */}
-        <div className="sticky top-0 z-30 pt-[max(0.6rem,env(safe-area-inset-top))] pb-2.5 backdrop-blur-xl bg-slate-900/90 -mx-4 px-4 sm:mx-0 sm:px-0 transition-colors">
+        <div className="session-tabs sticky top-0 z-30 pt-[max(0.6rem,env(safe-area-inset-top))] pb-2.5 backdrop-blur-xl bg-slate-900/90 -mx-4 px-4 sm:mx-0 sm:px-0 transition-colors">
           <div className="relative grid grid-cols-3 p-1.5 rounded-2xl bg-slate-800/90 border border-slate-700/80 shadow-lg shadow-black/20 overflow-hidden">
             {/* Smooth Animated Sliding Indicator Pill */}
             <div
@@ -295,6 +283,7 @@ export default function SessionView({
             />
 
             <button
+              aria-pressed={activeTab === 'orders'}
               onClick={() => setActiveTab('orders')}
               className={`relative z-10 flex flex-col items-center justify-center py-2 px-2 rounded-xl text-xs font-bold transition-all min-h-[50px] active:scale-95 touch-manipulation cursor-pointer ${
                 activeTab === 'orders'
@@ -307,7 +296,7 @@ export default function SessionView({
                 <span>{t.session.ordersTab}</span>
                 {orders.length > 0 && (
                   <span
-                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-black transition-colors ${
+                    className={`text-xs px-1.5 py-0.2 rounded-full font-black transition-colors ${
                       activeTab === 'orders' ? 'bg-blue-900/80 text-white ring-1 ring-white/20' : 'bg-slate-700 text-slate-300'
                     }`}
                   >
@@ -316,19 +305,20 @@ export default function SessionView({
                 )}
               </div>
               {totalUnassignedUnits > 0 ? (
-                <span className={`text-[9px] font-extrabold mt-0.5 transition-colors ${
+                <span className={`text-xs font-extrabold mt-0.5 transition-colors ${
                   activeTab === 'orders' ? 'text-amber-200' : 'text-amber-400'
                 }`}>
                   ⚠️ {totalUnassignedUnits} {t.session.unassignedBadge}
                 </span>
               ) : (
-                <span className="text-[9px] text-slate-400/90 font-normal mt-0.5 opacity-80">
+                <span className="text-xs text-slate-400/90 font-normal mt-0.5 opacity-80">
                   {orders.length} {t.session.articlesCount}
                 </span>
               )}
             </button>
 
             <button
+              aria-pressed={activeTab === 'friends'}
               onClick={() => setActiveTab('friends')}
               className={`relative z-10 flex flex-col items-center justify-center py-2 px-2 rounded-xl text-xs font-bold transition-all min-h-[50px] active:scale-95 touch-manipulation cursor-pointer ${
                 activeTab === 'friends'
@@ -341,7 +331,7 @@ export default function SessionView({
                 <span>{t.session.friendsTab}</span>
                 {participants.length > 0 && (
                   <span
-                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-black transition-colors ${
+                    className={`text-xs px-1.5 py-0.2 rounded-full font-black transition-colors ${
                       activeTab === 'friends' ? 'bg-blue-900/80 text-white ring-1 ring-white/20' : 'bg-slate-700 text-slate-300'
                     }`}
                   >
@@ -349,12 +339,13 @@ export default function SessionView({
                   </span>
                 )}
               </div>
-              <span className="text-[9px] text-slate-400/90 font-normal mt-0.5 opacity-80">
+              <span className="text-xs text-slate-400/90 font-normal mt-0.5 opacity-80">
                 {participants.length} {t.session.friendsSeated}
               </span>
             </button>
 
             <button
+              aria-pressed={activeTab === 'bill'}
               onClick={() => setActiveTab('bill')}
               className={`relative z-10 flex flex-col items-center justify-center py-2 px-2 rounded-xl text-xs font-bold transition-all min-h-[50px] active:scale-95 touch-manipulation cursor-pointer ${
                 activeTab === 'bill'
@@ -366,7 +357,7 @@ export default function SessionView({
                 <Wallet className="w-3.5 h-3.5 shrink-0" />
                 <span>{t.session.billTab}</span>
               </div>
-              <span className={`text-[9px] font-extrabold mt-0.5 transition-colors ${
+              <span className={`text-xs font-extrabold mt-0.5 transition-colors ${
                 activeTab === 'bill' ? 'text-emerald-200' : 'text-emerald-400'
               }`}>
                 {t.session.splitNet}

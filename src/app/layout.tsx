@@ -20,8 +20,6 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
   viewportFit: 'cover',
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#f8fafc' },
@@ -63,9 +61,10 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-full bg-slate-900 text-slate-100 flex flex-col antialiased selection:bg-blue-500/30">
+        <a href="#main-content" className="skip-link">Aller au contenu / Skip to content</a>
         <LanguageProvider>
           <SmoothScroll>
-            <main className="flex-1 pb-28 pt-[env(safe-area-inset-top)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
+            <main id="main-content" className="flex-1 pb-28 pt-[env(safe-area-inset-top)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
               {children}
             </main>
             <BottomNav />

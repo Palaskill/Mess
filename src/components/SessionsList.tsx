@@ -15,6 +15,7 @@ export default function SessionsList({ sessions }: SessionsListProps) {
 
   useGSAP(
     () => {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
       gsap.fromTo(
         '.session-card',
         { y: 16, opacity: 0 },
@@ -32,7 +33,7 @@ export default function SessionsList({ sessions }: SessionsListProps) {
   );
 
   return (
-    <div ref={containerRef} className="space-y-3">
+    <div ref={containerRef} className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {sessions.map((session) => (
         <SessionCard key={session.id} session={session} />
       ))}

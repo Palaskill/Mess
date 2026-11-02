@@ -97,7 +97,8 @@ export default function SessionCard({ session }: SessionCardProps) {
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
+        if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault();
           router.push(`/session/${session.id}`);
         }
       }}
@@ -108,7 +109,7 @@ export default function SessionCard({ session }: SessionCardProps) {
     >
       <div className="flex items-start justify-between gap-3">
         {/* Session Title & Badges */}
-        <div className="flex-1 min-w-0 pr-2">
+        <div className="flex-1 min-w-0 pe-2">
           <div className="flex items-center gap-2 mb-1.5 flex-wrap">
             <span
               className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold tracking-wide ${
@@ -161,7 +162,7 @@ export default function SessionCard({ session }: SessionCardProps) {
                 type="button"
                 onClick={handleConfirmDelete}
                 disabled={isDeleting || isPending}
-                className="px-3 py-1.5 text-xs font-semibold bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white rounded-lg transition-colors min-h-[36px] flex items-center justify-center cursor-pointer"
+                className="px-3 py-1.5 text-xs font-semibold bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white rounded-lg transition-colors min-h-[44px] flex items-center justify-center cursor-pointer"
               >
                 {isDeleting || isPending ? '...' : t.common.yes}
               </button>
@@ -169,7 +170,7 @@ export default function SessionCard({ session }: SessionCardProps) {
                 type="button"
                 onClick={handleCancelDelete}
                 disabled={isDeleting || isPending}
-                className="px-3 py-1.5 text-xs font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg transition-colors min-h-[36px] flex items-center justify-center cursor-pointer"
+                className="px-3 py-1.5 text-xs font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg transition-colors min-h-[44px] flex items-center justify-center cursor-pointer"
               >
                 {t.common.no}
               </button>

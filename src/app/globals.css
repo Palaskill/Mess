@@ -615,3 +615,74 @@ html.light .bg-blue-950\/40 {
 html.light .bg-slate-800.rounded-full {
   background-color: #e2e8f0 !important;
 }
+
+/* MEss shared visual language: quiet surfaces, warm social accents. */
+:root { --background: #10151d; --card: #1a2330; --border: #344050; }
+body { background: var(--background) !important; line-height: 1.5; }
+button, [role="tab"], input:not([type="checkbox"]):not([type="radio"]), select { min-height: 44px; }
+button { min-width: 44px; }
+button:disabled { cursor: not-allowed; }
+input, select, textarea { font-variant-numeric: tabular-nums; }
+.home-hero { background: radial-gradient(ellipse at 100% 0%, #74542c55, transparent 65%), #19212c; border: 1px solid #665139; }
+.summary-tile { padding: 24px; border: 1px solid var(--border); border-radius: 24px; background: var(--card); }
+.session-card, .order-card, .bill-card { border-radius: 24px; box-shadow: 0 8px 24px #00000012; }
+.session-card { padding: 24px; }
+nav[aria-label="Bottom Navigation"] { box-shadow: 0 -8px 32px #00000012; }
+.text-slate-500 { color: #9aaabd; }
+html.light .home-hero { background: radial-gradient(ellipse at 100% 0%, #f3d9b2, transparent 70%), #fff9ef; border-color: #e8d5b9; }
+html.light .home-hero .text-amber-400 { color: #8b520e !important; }
+html.light .summary-tile { background: #fff; }
+html.light input[type="password"], html.light input[type="search"] { background: #fff; color: #0f172a; border-color: #cbd5e1; }
+.skip-link { position: fixed; inset-inline-start: 16px; top: -100px; z-index: 1000; padding: 12px 20px; border-radius: 12px; background: #fff; color: #111; }
+.skip-link:focus { top: 16px; }
+@media (min-width: 768px) {
+  .session-card:hover { border-color: #b28b50; }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+/* Session workspace: explicit component colors avoid inherited light-theme overrides. */
+.session-workspace { --surface: #1a2330; --soft: #253142; --ink: #f1f5f9; --subtle: #b3c0d1; --line: #3c4b60; --selected: #243f60; --selected-ink: #dbeafe; }
+html.light .session-workspace { --surface: #fff; --soft: #f4f6f9; --ink: #172033; --subtle: #526176; --line: #dce3ed; --selected: #edf4ff; --selected-ink: #174ea6; }
+.session-topbar > div { gap: 8px; }
+.session-topbar .theme-toggle-compact { width: 44px; padding: 8px; justify-content: center; }
+.organizer-status { padding: 8px 0; color: var(--subtle); }
+.organizer-status button { white-space: nowrap; color: var(--ink); }
+.session-tabs { margin-bottom: 20px; }
+.session-tabs > div { box-shadow: none !important; }
+.session-tabs button { min-width: 0; }
+.session-tabs button > div { flex-wrap: wrap; justify-content: center; }
+.session-tabs button[aria-pressed="true"] span { color: #fff !important; }
+.orders-toolbar { display: flex; flex-direction: column; gap: 16px; }
+.orders-toolbar h2 { font-size: 20px; line-height: 1.4; }
+.orders-actions { display: grid; grid-template-columns: 1fr 1.5fr; gap: 12px; }
+.orders-actions button { justify-content: center; min-height: 48px; box-shadow: none; }
+.orders-actions .scan-action, html.light .orders-actions .scan-action, html.light .orders-actions .scan-action * { background: var(--soft) !important; color: var(--selected-ink) !important; border-color: var(--line) !important; }
+.orders-workspace .order-card { padding: 20px; background: var(--surface); border-color: var(--line); box-shadow: 0 4px 18px #12203306 !important; }
+.order-heading { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 12px; align-items: start; }
+.order-identity { display: flex; gap: 12px; min-width: 0; }
+.order-symbol { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 12px; background: var(--soft); color: var(--subtle); flex-shrink: 0; }
+.order-symbol svg { width: 18px; height: 18px; }
+.order-name { font-size: 16px; font-weight: 700; line-height: 1.45; overflow-wrap: anywhere; color: var(--ink); }
+.order-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; color: var(--subtle); font-size: 12px; margin-top: 6px; }
+.money { white-space: nowrap; font-variant-numeric: tabular-nums; unicode-bidi: isolate; }
+.order-total { font-size: 16px; line-height: 1.5; color: var(--ink); }
+.split-label { border-radius: 6px; padding: 2px 6px; background: var(--soft); }
+.order-tools { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+.order-tool { display: inline-flex; gap: 6px; align-items: center; justify-content: center; color: var(--subtle); font-size: 12px; padding: 8px; border-radius: 8px; }
+.order-tool:hover { background: var(--soft); }
+.order-delete:hover { color: #be123c; }
+.participant-list { display: grid; gap: 8px; }
+.participant-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 8px 4px 12px; border: 1px solid var(--line); border-radius: 12px; color: var(--subtle); background: var(--surface); }
+.participant-row.is-selected { background: var(--selected); color: var(--selected-ink); border-color: var(--line); }
+.participant-name { display: flex; gap: 8px; align-items: center; font-size: 14px; font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+.participant-dot { width: 8px; height: 8px; flex-shrink: 0; border-radius: 50%; }
+.quantity-control { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.quantity-control span { text-align: center; min-width: 24px; font-size: 14px; font-weight: 700; }
+.quantity-control button { width: 44px; height: 44px; border-radius: 8px; color: var(--selected-ink); background: var(--surface); font-size: 20px; border: 1px solid var(--line); }
+.quantity-control button:disabled { opacity: .4; }
+.orders-workspace .sharing-chip, html.light .orders-workspace .sharing-chip { background: var(--soft) !important; color: var(--subtle) !important; border: 1px solid var(--line); box-shadow: none !important; }
+.orders-workspace .sharing-chip.is-selected, html.light .orders-workspace .sharing-chip.is-selected { background: var(--selected) !important; color: var(--selected-ink) !important; }
+.orders-workspace .sharing-chip span, html.light .orders-workspace .sharing-chip span { color: inherit !important; }
+.orders-workspace .sharing-chip span:last-child { background: transparent; white-space: nowrap; }
+@media (max-width: 380px) { .order-symbol { display: none; } .orders-workspace .order-card { padding: 16px; } }
+@media (min-width: 640px) { .orders-toolbar { flex-direction: row; align-items: center; justify-content: space-between; } .orders-actions { display: flex; } .orders-actions button { padding-inline: 16px; } .session-topbar .theme-toggle-compact { width: auto; } }

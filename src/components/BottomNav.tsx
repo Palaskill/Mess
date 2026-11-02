@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { House, SlidersHorizontal } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { useLanguage } from '@/lib/i18n';
 
@@ -17,13 +18,13 @@ export default function BottomNav() {
     {
       href: '/',
       label: t.nav.home,
-      icon: '🏠',
+      icon: House,
       isActive: pathname === '/',
     },
     {
       href: '/admin',
       label: t.nav.admin,
-      icon: '🔧',
+      icon: SlidersHorizontal,
       isActive: pathname === '/admin' || pathname.startsWith('/admin/'),
     },
   ];
@@ -48,7 +49,7 @@ export default function BottomNav() {
               }`}
             >
               <span className={`text-xl leading-none mb-1 select-none transition-transform duration-200 ${active ? 'scale-110' : ''}`} role="img" aria-hidden="true">
-                {item.icon}
+                <item.icon className="w-5 h-5" />
               </span>
               <span className="text-[11px] font-semibold tracking-tight">
                 {item.label}

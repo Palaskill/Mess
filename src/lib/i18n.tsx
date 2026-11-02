@@ -242,7 +242,7 @@ export const translations: Record<Language, Translations> = {
       noOrdersDesc: "Scannez le ticket de caisse en photo pour tout importer par IA, ou passez votre commande manuellement !",
       scanButton: "Scanner l'Addition (IA Gemini)",
       manualButton: 'Commande Manuelle',
-      foodSplit: 'Food / Partagé',
+      foodSplit: 'Partagé',
       individual: 'Individuel',
       weightPending: "Prix au grammage en attente de l'addition",
       fillPrice: 'Renseigner prix',

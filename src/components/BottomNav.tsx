@@ -41,13 +41,13 @@ export default function BottomNav() {
               key={item.href}
               href={item.href}
               aria-current={active ? 'page' : undefined}
-              className={`flex flex-col items-center justify-center min-h-[44px] min-w-[68px] px-3 py-1 rounded-2xl transition-all duration-150 active:scale-95 ${
+              className={`flex flex-col items-center justify-center min-h-[46px] min-w-[72px] px-3.5 py-1.5 rounded-2xl transition-all duration-200 active:scale-95 touch-manipulation ${
                 active
-                  ? 'text-blue-400 font-bold'
-                  : 'text-slate-400 hover:text-slate-200 active:opacity-70'
+                  ? 'text-blue-400 font-bold bg-blue-500/10 border border-blue-500/20 shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200 active:opacity-70 border border-transparent'
               }`}
             >
-              <span className={`text-xl leading-none mb-1 select-none transition-transform duration-150 ${active ? 'scale-110' : ''}`} role="img" aria-hidden="true">
+              <span className={`text-xl leading-none mb-1 select-none transition-transform duration-200 ${active ? 'scale-110' : ''}`} role="img" aria-hidden="true">
                 {item.icon}
               </span>
               <span className="text-[11px] font-semibold tracking-tight">

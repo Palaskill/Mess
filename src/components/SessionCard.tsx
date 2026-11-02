@@ -193,7 +193,7 @@ export default function SessionCard({ session }: SessionCardProps) {
           {session.participant_count !== undefined ? (
             <span className="flex items-center gap-1.5 font-medium text-slate-300">
               <Users className="w-4 h-4 text-blue-400 shrink-0" />
-              {session.participant_count} {t.session.friendsSeated}
+              <span className="tabular-nums">{session.participant_count}</span> {t.session.friendsSeated}
             </span>
           ) : (
             <span className="text-slate-400">{t.home.tapToView}</span>

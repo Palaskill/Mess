@@ -629,7 +629,7 @@ export default function BillTab({
       >
         <div className="flex items-center justify-between text-slate-300 text-sm">
           <span>{t.bill.subtotal} ({orders.length} {t.orders.placedCount})</span>
-          <span className="font-bold">{formatCurrency(total)}</span>
+          <span className="font-bold tabular-nums">{formatCurrency(total)}</span>
         </div>
 
         {tipAmount > 0 && (
@@ -638,14 +638,14 @@ export default function BillTab({
               <span>💵</span>
               <span>{t.bill.tip}</span>
             </span>
-            <span className="font-bold">+{formatCurrency(tipAmount)}</span>
+            <span className="font-bold tabular-nums">+{formatCurrency(tipAmount)}</span>
           </div>
         )}
 
         {unassignedAmount > 0 && (
           <div className="flex items-center justify-between text-amber-400 text-xs font-semibold">
             <span>⚠️ {t.bill.unassignedTable}</span>
-            <span>{formatCurrency(unassignedAmount)}</span>
+            <span className="tabular-nums">{formatCurrency(unassignedAmount)}</span>
           </div>
         )}
 
@@ -658,7 +658,7 @@ export default function BillTab({
               to={grandTotalWithTip}
               decimals={3}
               currency="DT"
-              className="text-2xl sm:text-3xl font-black text-white block mt-0.5"
+              className="text-2xl sm:text-3xl font-black text-white block mt-0.5 tabular-nums"
             />
           </div>
 
@@ -666,13 +666,13 @@ export default function BillTab({
             <button
               onClick={handleCloseSession}
               disabled={isPending}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-slate-700 hover:bg-slate-600 active:bg-slate-650 text-slate-200 text-xs font-bold transition-all active:scale-95 border border-slate-600/70 min-h-[42px] cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-slate-700 hover:bg-slate-600 active:bg-slate-650 text-slate-200 text-xs font-bold transition-all active:scale-95 border border-slate-600/70 min-h-[44px] cursor-pointer"
             >
               <Lock className="w-3.5 h-3.5 text-slate-400" />
               <span>{isPending ? t.bill.closingTab : t.bill.closeTab}</span>
             </button>
           ) : (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700 text-xs font-bold">
+            <span className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-slate-800 text-slate-400 border border-slate-700 text-xs font-bold min-h-[40px]">
               <Lock className="w-3.5 h-3.5 text-slate-400" />
               <span>{t.bill.readOnlyBadge}</span>
             </span>

@@ -176,7 +176,7 @@ export default function FriendsTab({
               <div className="flex items-center gap-3">
                 <div
                   className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white text-base shadow-inner ring-2 ring-white/10"
-                  style={{ backgroundColor: p.color }}
+                  style={{ backgroundColor: p.color, boxShadow: `0 0 12px ${p.color}50` }}
                 >
                   {p.name.charAt(0).toUpperCase()}
                 </div>

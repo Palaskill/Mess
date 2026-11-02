@@ -1,6 +1,7 @@
 'use client';
 
-import { Beer } from 'lucide-react';
+import { useState } from 'react';
+import { Beer, Search, Sparkles } from 'lucide-react';
 import { Session } from '@/types';
 import SessionsList from '@/components/SessionsList';
 import CreateSessionForm from '@/components/CreateSessionForm';
@@ -16,6 +17,11 @@ interface HomeViewProps {
 
 export default function HomeView({ sessions, openSessionsCount }: HomeViewProps) {
   const { t, language } = useLanguage();
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredSessions = sessions.filter((s) =>
+    s.name.toLowerCase().includes(searchQuery.toLowerCase().trim())
+  );
 
   return (
     <div className="min-h-full pb-32">
@@ -24,7 +30,7 @@ export default function HomeView({ sessions, openSessionsCount }: HomeViewProps)
         <header className="mb-6 sm:mb-8">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-md shrink-0">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-md shrink-0">
                 <Beer className="w-6 h-6 text-amber-400" />
               </div>
               <div>
@@ -46,11 +52,11 @@ export default function HomeView({ sessions, openSessionsCount }: HomeViewProps)
           {/* Quick stats pills */}
           {sessions.length > 0 && (
             <div className="flex items-center gap-2 mt-4 pt-4 border-t border-slate-800 text-xs flex-wrap">
-              <span className="px-3 py-1 rounded-full bg-slate-800 text-slate-300 font-medium border border-slate-700/60">
-                {sessions.length} {t.home.totalSessions}
+              <span className="px-3 py-1 rounded-full bg-slate-800 text-slate-300 font-medium border border-slate-700/60 tabular-nums">
+                <strong className="text-white">{sessions.length}</strong> {t.home.totalSessions}
               </span>
               {openSessionsCount > 0 && (
-                <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 font-medium border border-emerald-500/30 flex items-center gap-1.5">
+                <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 font-medium border border-emerald-500/30 flex items-center gap-1.5 tabular-nums">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                   <ShinyText
                     text={`${openSessionsCount} ${t.home.activeNow}`}
@@ -58,6 +64,20 @@ export default function HomeView({ sessions, openSessionsCount }: HomeViewProps)
                   />
                 </span>
               )}
+            </div>
+          )}
+
+          {/* Search bar when multiple sessions exist */}
+          {sessions.length > 2 && (
+            <div className="relative mt-4">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 rtl:left-auto rtl:right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={language === 'ar' ? 'بحث عن جلسة...' : language === 'en' ? 'Search sessions...' : 'Rechercher une session...'}
+                className="w-full pl-10 pr-4 rtl:pl-4 rtl:pr-10 py-2.5 rounded-2xl bg-slate-800/80 border border-slate-700/80 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-blue-500 transition-all min-h-[42px]"
+              />
             </div>
           )}
         </header>
@@ -121,7 +141,7 @@ export default function HomeView({ sessions, openSessionsCount }: HomeViewProps)
                   {t.home.tapToView}
                 </span>
               </div>
-              <SessionsList sessions={sessions} />
+              <SessionsList sessions={filteredSessions} />
             </div>
           )}
         </section>

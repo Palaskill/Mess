@@ -76,7 +76,7 @@ export default function ThemeToggle({
         type="button"
         onClick={cycleNext}
         title={`Current theme: ${label}. Tap to change.`}
-        className={`flex items-center gap-1.5 px-3 py-2 rounded-2xl border border-slate-700/60 bg-slate-800/80 hover:bg-slate-700 active:bg-slate-650 text-xs font-semibold text-slate-200 transition-all active:scale-95 min-h-[40px] touch-manipulation shadow-sm theme-toggle-compact ${className}`}
+        className={`flex items-center gap-1.5 px-3 py-2 rounded-2xl border border-slate-700/60 bg-slate-800/80 hover:bg-slate-700 active:bg-slate-650 text-xs font-semibold text-slate-200 transition-all active:scale-95 min-h-[42px] touch-manipulation shadow-sm theme-toggle-compact ${className}`}
       >
         {theme === 'dark' && <Moon className="w-3.5 h-3.5 text-blue-400 shrink-0" />}
         {theme === 'light' && <Sun className="w-3.5 h-3.5 text-amber-500 shrink-0" />}

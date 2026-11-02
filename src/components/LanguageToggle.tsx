@@ -85,7 +85,7 @@ export default function LanguageToggle({
         aria-expanded={isOpen}
         aria-haspopup="listbox"
         aria-label="Sélectionner la langue / Select language"
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-slate-800/80 hover:bg-slate-700/80 active:bg-slate-700 border border-slate-700/70 text-xs font-bold text-slate-200 shadow-sm backdrop-blur-sm active:scale-95 transition-all min-h-[38px] touch-manipulation cursor-pointer"
+        className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-slate-800/80 hover:bg-slate-700/80 active:bg-slate-700 border border-slate-700/70 text-xs font-bold text-slate-200 shadow-sm backdrop-blur-sm active:scale-95 transition-all min-h-[42px] touch-manipulation cursor-pointer"
       >
         <Globe className="w-3.5 h-3.5 text-blue-400 shrink-0" />
         <span className="tracking-wide">{currentLang.native}</span>

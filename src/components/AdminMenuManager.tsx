@@ -7,6 +7,7 @@ import {
   updateMenuItem,
   deleteMenuItem,
 } from '@/lib/actions';
+import { formatCurrency } from '@/lib/utils';
 
 interface AdminMenuManagerProps {
   initialItems: MenuItem[];
@@ -220,17 +221,17 @@ export default function AdminMenuManager({ initialItems }: AdminMenuManagerProps
 
               {/* Price and actions */}
               <div className="flex items-center gap-3 shrink-0 ml-2">
-                <span className="text-base font-extrabold text-emerald-400">
-                  ${Number(item.price).toFixed(2)}
+                <span className="text-base font-extrabold text-emerald-400 tabular-nums">
+                  {formatCurrency(Number(item.price))}
                 </span>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1.5">
                   <button
                     onClick={() => {
                       setError(null);
                       setEditingItem(item);
                     }}
                     aria-label={`Edit ${item.name}`}
-                    className="w-9 h-9 rounded-lg flex items-center justify-center bg-slate-700/70 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
+                    className="w-10 h-10 rounded-xl flex items-center justify-center bg-slate-700/70 hover:bg-slate-700 active:bg-slate-600 text-slate-300 hover:text-white transition-all active:scale-95 touch-manipulation cursor-pointer"
                   >
                     ✏️
                   </button>
@@ -238,7 +239,7 @@ export default function AdminMenuManager({ initialItems }: AdminMenuManagerProps
                     onClick={() => handleDelete(item.id, item.name)}
                     disabled={deletingId === item.id || isPending}
                     aria-label={`Delete ${item.name}`}
-                    className="w-9 h-9 rounded-lg flex items-center justify-center bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition-colors disabled:opacity-50"
+                    className="w-10 h-10 rounded-xl flex items-center justify-center bg-rose-500/15 hover:bg-rose-500/25 active:bg-rose-500/35 text-rose-400 transition-all active:scale-95 disabled:opacity-50 touch-manipulation cursor-pointer"
                   >
                     {deletingId === item.id ? '...' : '🗑️'}
                   </button>
@@ -301,16 +302,16 @@ export default function AdminMenuManager({ initialItems }: AdminMenuManagerProps
 
               <div>
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
-                  Price ($) *
+                  Price (DT) *
                 </label>
                 <input
                   type="number"
                   name="price"
-                  step="0.01"
+                  step="0.100"
                   min="0"
                   inputMode="decimal"
                   required
-                  placeholder="4.50"
+                  placeholder="4.500"
                   className="w-full px-4 py-3.5 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 text-base min-h-[48px]"
                 />
               </div>
@@ -412,12 +413,12 @@ export default function AdminMenuManager({ initialItems }: AdminMenuManagerProps
 
               <div>
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
-                  Price ($) *
+                  Price (DT) *
                 </label>
                 <input
                   type="number"
                   name="price"
-                  step="0.01"
+                  step="0.100"
                   min="0"
                   inputMode="decimal"
                   defaultValue={editingItem.price}

@@ -891,12 +891,12 @@ export default function OrdersTab({
                         <h4 className="font-extrabold text-white text-base">
                           {order.item_name}
                         </h4>
-                        <span className="text-xs font-bold text-slate-400">
+                        <span className="text-xs font-bold text-slate-400 tabular-nums">
                           × {order.quantity}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 text-xs text-slate-400 mt-0.5">
-                        <span className={isPendingWeight ? 'text-amber-400 font-bold' : 'text-emerald-400 font-semibold'}>
+                        <span className={isPendingWeight ? 'text-amber-400 font-bold' : 'text-emerald-400 font-semibold tabular-nums'}>
                           {isPendingWeight ? 'À peser (0 DT)' : formatCurrency(Number(order.unit_price))}
                         </span>
                         <span>•</span>
@@ -914,14 +914,14 @@ export default function OrdersTab({
                   </div>
 
                   <div className="flex items-center gap-1.5">
-                    <span className="text-base font-black text-white mr-1">
+                    <span className="text-base font-black text-white mr-1 tabular-nums">
                       {formatCurrency(totalOrderPrice)}
                     </span>
                     {!isClosed && (
                       <button
                         type="button"
                         onClick={() => handleOpenWeightModal(order)}
-                        className="px-2.5 py-1.5 rounded-xl bg-slate-700/80 hover:bg-slate-700 active:bg-slate-600 text-slate-200 text-xs font-semibold flex items-center gap-1 border border-slate-600/60 transition active:scale-95 touch-manipulation min-h-[36px] cursor-pointer"
+                        className="px-2.5 py-1.5 rounded-xl bg-slate-700/80 hover:bg-slate-700 active:bg-slate-600 text-slate-200 text-xs font-semibold flex items-center gap-1 border border-slate-600/60 transition active:scale-95 touch-manipulation min-h-[40px] cursor-pointer"
                         title="Ajuster le montant ou le grammage selon l'addition"
                       >
                         <Scale className="w-3.5 h-3.5 text-amber-400 shrink-0" />
@@ -933,7 +933,7 @@ export default function OrdersTab({
                         onClick={() => handleDeleteOrder(order.id, order.item_name)}
                         disabled={isPending}
                         aria-label={t.orders.deleteOrder}
-                        className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 active:scale-95 transition-all touch-manipulation cursor-pointer"
+                        className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 active:scale-95 transition-all touch-manipulation cursor-pointer"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>

@@ -1,5 +1,7 @@
 'use client';
 
+import { separateSharedUnits } from '@/lib/shared-orders';
+
 import { useState, useRef, useEffect, useTransition } from 'react';
 import { createPortal } from 'react-dom';
 import {
@@ -229,7 +231,7 @@ export default function ReceiptScannerModal({
               assigned_participant_ids: [],
             };
           });
-          setEditedItems(initialItems);
+          setEditedItems(separateSharedUnits(initialItems).map((item, index) => ({ ...item, id: `${item.id}-unit-${index}` })));
           setWizardIndex(0);
           // 🚀 DIRECT TO WIZARD: ask who to assign each row one by one!
           setStep('wizard');
@@ -279,7 +281,7 @@ export default function ReceiptScannerModal({
             id: `item-${Date.now()}-${idx}`,
             assigned_participant_ids: [],
           }));
-          setEditedItems(initialItems);
+          setEditedItems(separateSharedUnits(initialItems).map((item, index) => ({ ...item, id: `${item.id}-unit-${index}` })));
           setWizardIndex(0);
           setStep('wizard');
         } else {

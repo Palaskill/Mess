@@ -1,5 +1,7 @@
 'use client';
 
+import { separateSharedUnits } from '@/lib/shared-orders';
+
 import { useState, useTransition, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import {
@@ -153,8 +155,7 @@ export default function OrdersTab({
 
   // Helper: check quantity of a menu item in current round
   const getItemQtyInRound = (menuItemId: string) => {
-    const item = roundItems.find((r) => r.menuItemId === menuItemId);
-    return item ? item.quantity : 0;
+    return roundItems.filter((r) => r.menuItemId === menuItemId).reduce((sum, r) => sum + r.quantity, 0);
   };
 
   // Helper: count items from a specific category in current round
@@ -168,16 +169,16 @@ export default function OrdersTab({
   const handleAddItem = (item: MenuItem) => {
     setError(null);
     setRoundItems((prev) => {
-      const existing = prev.find((r) => r.menuItemId === item.id);
+      const existing = prev.find((r) => r.menuItemId === item.id && r.splitType === 'individual' && item.default_split === 'individual');
       if (existing) {
         return prev.map((r) =>
-          r.menuItemId === item.id ? { ...r, quantity: r.quantity + 1 } : r
+          r.id === existing.id ? { ...r, quantity: r.quantity + 1 } : r
         );
       }
       return [
         ...prev,
         {
-          id: `menu-${item.id}`,
+          id: `menu-${item.id}-${crypto.randomUUID()}`,
           menuItemId: item.id,
           name: item.name,
           unitPrice: Number(item.price),
@@ -194,31 +195,27 @@ export default function OrdersTab({
   const handleRemoveItem = (menuItemId: string) => {
     setError(null);
     setRoundItems((prev) => {
-      const existing = prev.find((r) => r.menuItemId === menuItemId);
+      const existing = [...prev].reverse().find((r) => r.menuItemId === menuItemId);
       if (!existing) return prev;
       if (existing.quantity > 1) {
         return prev.map((r) =>
-          r.menuItemId === menuItemId ? { ...r, quantity: r.quantity - 1 } : r
+          r.id === existing.id ? { ...r, quantity: r.quantity - 1 } : r
         );
       }
-      return prev.filter((r) => r.menuItemId !== menuItemId);
+      return prev.filter((r) => r.id !== existing.id);
     });
   };
 
   // Stepper inside round review
   const handleUpdateRoundItemQty = (id: string, delta: number) => {
     setError(null);
-    setRoundItems((prev) =>
-      prev
-        .map((r) => {
-          if (r.id === id) {
-            const next = r.quantity + delta;
-            return next > 0 ? { ...r, quantity: next } : null;
-          }
-          return r;
-        })
-        .filter(Boolean) as RoundItem[]
-    );
+    setRoundItems((prev) => {
+      const item = prev.find(r => r.id === id);
+      if (item?.splitType === 'shared' && delta > 0) {
+        return [...prev, { ...item, id: crypto.randomUUID(), quantity: delta, assignedParticipantIds: [] }];
+      }
+      return prev.map(r => r.id === id ? { ...r, quantity: r.quantity + delta } : r).filter(r => r.quantity > 0);
+    });
   };
 
   // Adjust quantity assigned to a friend on a round item
@@ -373,7 +370,9 @@ export default function OrdersTab({
 
     setError(null);
 
-    const itemsToSubmit: CreateBatchOrderItem[] = roundItems.map((r) => ({
+    const expandedRoundItems = roundItems.flatMap(r => r.splitType === 'shared'
+      ? Array.from({ length: r.quantity }, (_, index) => ({ ...r, id: `${r.id}-${index}`, quantity: 1 })) : [r]);
+    const itemsToSubmit: CreateBatchOrderItem[] = expandedRoundItems.map((r) => ({
       menu_item_id: r.menuItemId || null,
       item_name: r.name,
       quantity: r.quantity,
@@ -385,9 +384,9 @@ export default function OrdersTab({
     }));
 
     // ⚡ INSTANT OPTIMISTIC UI: close modal immediately & display new items in 0ms!
-    const savedRoundItems = [...roundItems];
+    const savedRoundItems = [...expandedRoundItems];
     const timestamp = Date.now();
-    const optimisticOrders: Order[] = roundItems.map((r, idx) => ({
+    const optimisticOrders: Order[] = expandedRoundItems.map((r, idx) => ({
       id: `temp-${timestamp}-${idx}`,
       session_id: sessionId,
       menu_item_id: r.menuItemId || null,
@@ -598,7 +597,8 @@ export default function OrdersTab({
   };
 
   // Import orders detected by Gemini Vision scanner
-  const handleImportScannedOrders = (scannedItems: CreateBatchOrderItem[]) => {
+  const handleImportScannedOrders = (scannedInput: CreateBatchOrderItem[]) => {
+    const scannedItems = separateSharedUnits(scannedInput);
     if (scannedItems.length === 0) return;
 
     // ⚡ 0ms INSTANT OPTIMISTIC UI: display all scanned orders & assignments immediately!
@@ -1502,7 +1502,7 @@ export default function OrdersTab({
                                 : 'bg-blue-500/20 text-blue-300 border border-blue-500/40'
                             }`}
                           >
-                            <span>{item.splitType === 'shared' ? '🍕 Food / Shared' : '🍺 Drinks / By Unit'}</span>
+                            <span>{item.splitType === 'shared' ? (language === 'fr' ? 'Partage de cet article uniquement' : language === 'ar' ? 'تقسيم هذا الصنف فقط' : 'Share this item only') : (language === 'fr' ? 'Par unité' : language === 'ar' ? 'حسب الوحدة' : 'By unit')}</span>
                             <span className="text-[9px] opacity-70">↻</span>
                           </button>
 

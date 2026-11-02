@@ -1,5 +1,6 @@
 'use server';
 
+import { separateSharedUnits } from '@/lib/shared-orders';
 import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import crypto from 'crypto';
@@ -746,11 +747,11 @@ export async function createBatchOrders(
       return { success: false, error: 'At least one item is required' };
     }
 
-    const validItems = items.filter((item) => {
+    const validItems = separateSharedUnits(items.filter((item) => {
       const unitPrice = parseFloat(String(item.unit_price));
       const itemName = item.item_name?.trim();
       return itemName && !isNaN(unitPrice) && unitPrice >= 0;
-    });
+    }));
 
     if (validItems.length === 0) {
       return { success: false, error: 'No valid items to order' };

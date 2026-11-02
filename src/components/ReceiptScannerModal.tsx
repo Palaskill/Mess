@@ -644,6 +644,22 @@ export default function ReceiptScannerModal({
                   Détection des lignes, quantités et prix. Préparation du questionnaire d&apos;affectation...
                 </p>
               </div>
+
+              {/* Skeleton Receipt Lines Preview */}
+              <div className="w-full max-w-xs space-y-2 pt-2 px-4">
+                {[1, 2, 3].map((n) => (
+                  <div
+                    key={n}
+                    className="p-3 rounded-xl bg-slate-800/60 border border-slate-700/50 flex items-center justify-between gap-3 skeleton-shimmer"
+                  >
+                    <div className="flex items-center gap-2 flex-1">
+                      <div className="w-5 h-5 rounded-md bg-slate-700/60 shrink-0" />
+                      <div className="h-3.5 bg-slate-700/60 rounded-md w-3/4" />
+                    </div>
+                    <div className="h-3.5 bg-slate-700/60 rounded-md w-12 shrink-0" />
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 

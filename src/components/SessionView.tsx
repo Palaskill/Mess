@@ -274,13 +274,25 @@ export default function SessionView({
 
         {/* 3 Main Sticky Tabs (iOS Segmented Control Style) */}
         <div className="sticky top-0 z-30 pt-[max(0.6rem,env(safe-area-inset-top))] pb-2.5 backdrop-blur-xl bg-slate-900/90 -mx-4 px-4 sm:mx-0 sm:px-0 transition-colors">
-          <div className="grid grid-cols-3 gap-1.5 p-1.5 rounded-2xl bg-slate-800/90 border border-slate-700/80 shadow-lg shadow-black/20">
+          <div className="relative grid grid-cols-3 p-1.5 rounded-2xl bg-slate-800/90 border border-slate-700/80 shadow-lg shadow-black/20 overflow-hidden">
+            {/* Smooth Animated Sliding Indicator Pill */}
+            <div
+              aria-hidden="true"
+              className="absolute top-1.5 bottom-1.5 left-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 shadow-md shadow-blue-900/40 ring-1 ring-white/20 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
+              style={{
+                width: 'calc((100% - 12px) / 3)',
+                transform: `translateX(${
+                  activeTab === 'orders' ? '0%' : activeTab === 'friends' ? '100%' : '200%'
+                })`,
+              }}
+            />
+
             <button
               onClick={() => setActiveTab('orders')}
-              className={`flex flex-col items-center justify-center py-2 px-2 rounded-xl text-xs font-bold transition-all min-h-[50px] relative active:scale-98 touch-manipulation ${
+              className={`relative z-10 flex flex-col items-center justify-center py-2 px-2 rounded-xl text-xs font-bold transition-all min-h-[50px] active:scale-95 touch-manipulation cursor-pointer ${
                 activeTab === 'orders'
-                  ? 'bg-blue-600 text-white shadow-md shadow-blue-900/40 ring-1 ring-white/15'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                  ? 'text-white'
+                  : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               <div className="flex items-center gap-1.5">
@@ -288,8 +300,8 @@ export default function SessionView({
                 <span>Commandes</span>
                 {orders.length > 0 && (
                   <span
-                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
-                      activeTab === 'orders' ? 'bg-blue-800 text-white' : 'bg-slate-700 text-slate-300'
+                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-black transition-colors ${
+                      activeTab === 'orders' ? 'bg-blue-900/80 text-white ring-1 ring-white/20' : 'bg-slate-700 text-slate-300'
                     }`}
                   >
                     {orders.length}
@@ -297,11 +309,13 @@ export default function SessionView({
                 )}
               </div>
               {totalUnassignedUnits > 0 ? (
-                <span className="text-[9px] text-amber-300 font-extrabold mt-0.5">
+                <span className={`text-[9px] font-extrabold mt-0.5 transition-colors ${
+                  activeTab === 'orders' ? 'text-amber-200' : 'text-amber-400'
+                }`}>
                   ⚠️ {totalUnassignedUnits} à affecter
                 </span>
               ) : (
-                <span className="text-[9px] text-slate-400 font-normal mt-0.5 opacity-80">
+                <span className="text-[9px] text-slate-400/90 font-normal mt-0.5 opacity-80">
                   {orders.length} articles
                 </span>
               )}
@@ -309,10 +323,10 @@ export default function SessionView({
 
             <button
               onClick={() => setActiveTab('friends')}
-              className={`flex flex-col items-center justify-center py-2 px-2 rounded-xl text-xs font-bold transition-all min-h-[50px] relative active:scale-98 touch-manipulation ${
+              className={`relative z-10 flex flex-col items-center justify-center py-2 px-2 rounded-xl text-xs font-bold transition-all min-h-[50px] active:scale-95 touch-manipulation cursor-pointer ${
                 activeTab === 'friends'
-                  ? 'bg-blue-600 text-white shadow-md shadow-blue-900/40 ring-1 ring-white/15'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                  ? 'text-white'
+                  : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               <div className="flex items-center gap-1.5">
@@ -320,32 +334,34 @@ export default function SessionView({
                 <span>Amis</span>
                 {participants.length > 0 && (
                   <span
-                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
-                      activeTab === 'friends' ? 'bg-blue-800 text-white' : 'bg-slate-700 text-slate-300'
+                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-black transition-colors ${
+                      activeTab === 'friends' ? 'bg-blue-900/80 text-white ring-1 ring-white/20' : 'bg-slate-700 text-slate-300'
                     }`}
                   >
                     {participants.length}
                   </span>
                 )}
               </div>
-              <span className="text-[9px] text-slate-400 font-normal mt-0.5 opacity-80">
+              <span className="text-[9px] text-slate-400/90 font-normal mt-0.5 opacity-80">
                 {participants.length} convive{participants.length !== 1 ? 's' : ''}
               </span>
             </button>
 
             <button
               onClick={() => setActiveTab('bill')}
-              className={`flex flex-col items-center justify-center py-2 px-2 rounded-xl text-xs font-bold transition-all min-h-[50px] relative active:scale-98 touch-manipulation ${
+              className={`relative z-10 flex flex-col items-center justify-center py-2 px-2 rounded-xl text-xs font-bold transition-all min-h-[50px] active:scale-95 touch-manipulation cursor-pointer ${
                 activeTab === 'bill'
-                  ? 'bg-blue-600 text-white shadow-md shadow-blue-900/40 ring-1 ring-white/15'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                  ? 'text-white'
+                  : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               <div className="flex items-center gap-1.5">
                 <Wallet className="w-3.5 h-3.5 shrink-0" />
                 <span>L&apos;Addition</span>
               </div>
-              <span className="text-[9px] text-emerald-400 font-extrabold mt-0.5">
+              <span className={`text-[9px] font-extrabold mt-0.5 transition-colors ${
+                activeTab === 'bill' ? 'text-emerald-200' : 'text-emerald-400'
+              }`}>
                 Partage net
               </span>
             </button>

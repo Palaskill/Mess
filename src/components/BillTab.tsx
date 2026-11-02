@@ -469,6 +469,67 @@ export default function BillTab({
         </div>
       )}
 
+      {/* ==================== VISUAL BILL BREAKDOWN BAR ==================== */}
+      {grandTotalWithTip > 0 && participants.length > 0 && (
+        <div className="p-4 rounded-2xl bg-slate-800/80 border border-slate-700/80 shadow-md space-y-2.5 transition-all">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-bold text-slate-300 flex items-center gap-1.5">
+              <span>📊</span>
+              <span>Répartition de l&apos;Addition</span>
+            </span>
+            <span className="text-[11px] font-semibold text-emerald-400">
+              Total {formatCurrency(grandTotalWithTip)}
+            </span>
+          </div>
+
+          {/* Segmented Visual Progress Bar */}
+          <div className="h-3.5 w-full rounded-full bg-slate-900/90 overflow-hidden flex p-0.5 gap-0.5 border border-slate-700/60 shadow-inner">
+            {finalBills
+              .filter((b) => b.grandTotal > 0)
+              .sort((a, b) => b.grandTotal - a.grandTotal)
+              .map((b) => {
+                const percent = Math.max(1, (b.grandTotal / grandTotalWithTip) * 100);
+                return (
+                  <div
+                    key={b.participant.id}
+                    className="h-full first:rounded-l-full last:rounded-r-full transition-all duration-500 ease-out relative group"
+                    style={{
+                      width: `${percent}%`,
+                      backgroundColor: b.participant.color,
+                    }}
+                    title={`${b.participant.name}: ${percent.toFixed(1)}% (${formatCurrency(b.grandTotal)})`}
+                  />
+                );
+              })}
+          </div>
+
+          {/* Interactive Legend Tags */}
+          <div className="flex flex-wrap items-center gap-1.5 pt-1">
+            {finalBills
+              .filter((b) => b.grandTotal > 0)
+              .sort((a, b) => b.grandTotal - a.grandTotal)
+              .map((b) => {
+                const percent = ((b.grandTotal / grandTotalWithTip) * 100).toFixed(0);
+                return (
+                  <div
+                    key={b.participant.id}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-900/60 border border-slate-700/60 text-[11px] font-semibold text-slate-300 transition-transform active:scale-95"
+                  >
+                    <span
+                      className="w-2 h-2 rounded-full shrink-0"
+                      style={{ backgroundColor: b.participant.color }}
+                    />
+                    <span className="truncate max-w-[90px]">{b.participant.name}</span>
+                    <span className="text-[10px] text-slate-400 font-mono font-bold">
+                      {percent}%
+                    </span>
+                  </div>
+                );
+              })}
+          </div>
+        </div>
+      )}
+
       {/* ==================== INDIVIDUAL BILLS ==================== */}
       {participants.length === 0 ? (
         <div className="text-center py-12 px-4 rounded-2xl border border-dashed border-slate-700 bg-slate-800/30">

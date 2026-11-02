@@ -100,7 +100,7 @@ export default function SessionCard({ session }: SessionCardProps) {
         }
       }}
       spotlightColor={isOpen ? 'rgba(16, 185, 129, 0.18)' : 'rgba(59, 130, 246, 0.15)'}
-      className={`session-card group relative block rounded-2xl bg-slate-800/90 border border-slate-700/80 p-4 sm:p-5 shadow-lg shadow-black/20 backdrop-blur-sm transition-all duration-200 hover:border-slate-500 hover:bg-slate-800 active:scale-[0.99] cursor-pointer touch-manipulation ${
+      className={`session-card group relative block rounded-2xl bg-slate-800/90 border border-slate-700/80 p-4 sm:p-5 shadow-lg shadow-black/20 backdrop-blur-sm transition-all duration-300 hover:border-slate-500 hover:bg-slate-800 hover:-translate-y-0.5 hover:shadow-xl active:scale-[0.985] cursor-pointer touch-manipulation ${
         isDeleting || isPending ? 'opacity-50 pointer-events-none' : ''
       }`}
     >
@@ -115,11 +115,16 @@ export default function SessionCard({ session }: SessionCardProps) {
                   : 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
               }`}
             >
-              <span
-                className={`w-1.5 h-1.5 rounded-full ${
-                  isOpen ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'
-                }`}
-              />
+              <span className="relative flex h-2 w-2">
+                {isOpen && (
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                )}
+                <span
+                  className={`relative inline-flex rounded-full h-2 w-2 ${
+                    isOpen ? 'bg-emerald-400' : 'bg-rose-400'
+                  }`}
+                />
+              </span>
               {isOpen ? 'Open' : 'Closed'}
             </span>
 
@@ -194,9 +199,9 @@ export default function SessionCard({ session }: SessionCardProps) {
           )}
         </div>
 
-        <span className="flex items-center gap-1 font-semibold text-blue-400 group-hover:translate-x-0.5 transition-transform">
-          <span>Open</span>
-          <ArrowRight className="w-3.5 h-3.5" />
+        <span className="flex items-center gap-1 font-semibold text-blue-400 group-hover:text-blue-300 transition-colors">
+          <span>Ouvrir</span>
+          <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform duration-200" />
         </span>
       </div>
     </SpotlightCard>

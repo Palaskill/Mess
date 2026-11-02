@@ -747,3 +747,14 @@ html.light :is(.friends-workspace, .bill-workspace, .menu-workspace) { --panel: 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
+
+/* Receipt assignment must reserve room for names before quantity controls. */
+.receipt-scanner .scanner-people-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.receipt-scanner .scanner-person-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; }
+.receipt-scanner .scanner-person-name { min-width: 0; white-space: normal; overflow-wrap: anywhere; font-size: 14px; line-height: 1.5; }
+.receipt-scanner .scanner-person-stepper button { width: 44px; height: 44px; min-width: 44px; min-height: 44px; }
+.receipt-scanner .scanner-person-stepper > span { width: 24px; font-size: 14px; font-variant-numeric: tabular-nums; }
+@media (max-width: 359px) {
+  .receipt-scanner .scanner-person-row { grid-template-columns: minmax(0, 1fr); }
+  .receipt-scanner .scanner-person-stepper { justify-self: end; }
+}

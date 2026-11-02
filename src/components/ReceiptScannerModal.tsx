@@ -1,5 +1,6 @@
 'use client';
 
+import FriendAvatar from '@/components/FriendAvatar';
 import { separateSharedUnits } from '@/lib/shared-orders';
 
 import { useState, useRef, useEffect, useTransition } from 'react';
@@ -886,7 +887,7 @@ export default function ReceiptScannerModal({
                     </p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                  <div className="scanner-people-list">
                     {participants.map((p) => {
                       const assignments = currentItem.assigned_participant_ids || [];
                       const countForThisPerson = assignments.filter((id) => id === p.id).length;
@@ -899,20 +900,16 @@ export default function ReceiptScannerModal({
                             key={p.id}
                             type="button"
                             onClick={() => handleToggleParticipantInWizard(p.id)}
-                            className={`p-3 rounded-2xl border flex items-center gap-2.5 text-left transition-all active:scale-95 touch-manipulation cursor-pointer ${
+                            aria-pressed={isSelected}
+                            className={`p-3 rounded-2xl border flex items-center gap-2.5 text-start transition-all active:scale-95 touch-manipulation cursor-pointer ${
                               isSelected
                                 ? 'bg-blue-600/20 border-blue-500 ring-2 ring-blue-500/40 text-white shadow-md'
                                 : 'bg-slate-800/70 border-slate-700/80 text-slate-300 hover:bg-slate-800 hover:border-slate-600'
                             }`}
                           >
-                            <div
-                              className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0 shadow"
-                              style={{ backgroundColor: p.color || '#3B82F6' }}
-                            >
-                              {p.name.charAt(0).toUpperCase()}
-                            </div>
+                            <FriendAvatar name={p.name} color={p.color || "#3B82F6"} size={36} />
                             <div className="min-w-0 flex-1">
-                              <span className="block text-xs font-bold truncate leading-tight">
+                              <span className="scanner-person-name block font-bold">
                                 {p.name}
                               </span>
                               {isSelected && currentItem.split_type === 'shared' && (
@@ -935,30 +932,26 @@ export default function ReceiptScannerModal({
                       return (
                         <div
                           key={p.id}
-                          className={`p-2.5 rounded-2xl border flex items-center justify-between gap-1.5 transition-all ${
+                          className={`scanner-person-row p-3 rounded-2xl border transition-all ${
                             isSelected
                               ? 'bg-blue-600/20 border-blue-500/80 text-white'
                               : 'bg-slate-800/70 border-slate-700/80 text-slate-300'
                           }`}
                         >
-                          <div className="flex items-center gap-2 min-w-0">
-                            <div
-                              className="w-7 h-7 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0 shadow"
-                              style={{ backgroundColor: p.color || '#3B82F6' }}
-                            >
-                              {p.name.charAt(0).toUpperCase()}
-                            </div>
-                            <span className="text-xs font-bold truncate">
+                          <div className="scanner-person-identity flex items-center gap-3 min-w-0">
+                            <FriendAvatar name={p.name} color={p.color || "#3B82F6"} size={36} />
+                            <span className="scanner-person-name font-bold">
                               {p.name}
                             </span>
                           </div>
 
-                          <div className="flex items-center gap-1 shrink-0 bg-slate-900/90 rounded-xl p-0.5 border border-slate-700">
+                          <div className="scanner-person-stepper flex items-center gap-1 shrink-0 bg-slate-900/90 rounded-xl p-0.5 border border-slate-700">
                             <button
                               type="button"
+                              aria-label={`${language === "fr" ? "Retirer un article à" : language === "ar" ? "إزالة صنف من" : "Remove one item from"} ${p.name}`}
                               onClick={() => handleDecrementParticipant(p.id)}
                               disabled={countForThisPerson === 0}
-                              className="w-6 h-6 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-slate-800 text-white text-xs font-bold flex items-center justify-center touch-manipulation cursor-pointer"
+                              className="w-11 h-11 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-slate-800 text-white text-xs font-bold flex items-center justify-center touch-manipulation cursor-pointer"
                             >
                               -
                             </button>
@@ -967,9 +960,10 @@ export default function ReceiptScannerModal({
                             </span>
                             <button
                               type="button"
+                              aria-label={`${language === "fr" ? "Ajouter un article à" : language === "ar" ? "إضافة صنف إلى" : "Add one item to"} ${p.name}`}
                               onClick={() => handleIncrementParticipant(p.id)}
                               disabled={assignments.length >= currentItem.quantity}
-                              className="w-6 h-6 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-30 disabled:hover:bg-blue-600 text-white text-xs font-bold flex items-center justify-center touch-manipulation cursor-pointer"
+                              className="w-11 h-11 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-30 disabled:hover:bg-blue-600 text-white text-xs font-bold flex items-center justify-center touch-manipulation cursor-pointer"
                             >
                               +
                             </button>

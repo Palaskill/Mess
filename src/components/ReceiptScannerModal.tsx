@@ -46,6 +46,7 @@ import { useLanguage } from '@/lib/i18n';
 
 interface ReceiptScannerModalProps {
   isOpen: boolean;
+  sessionId: string;
   onClose: () => void;
   onImportOrders: (items: CreateBatchOrderItem[]) => void;
   participants: Participant[];
@@ -55,6 +56,7 @@ interface ReceiptScannerModalProps {
 
 export default function ReceiptScannerModal({
   isOpen,
+  sessionId,
   onClose,
   onImportOrders,
   participants,
@@ -127,16 +129,11 @@ export default function ReceiptScannerModal({
     }
   }, [wizardIndex, step]);
 
-  // Load saved Gemini API key from localStorage and verify server status
+  // Clear legacy plaintext keys; an entered personal key stays in memory only.
   useEffect(() => {
-    const saved = localStorage.getItem('mess-gemini-key');
-    if (saved) {
-      setGeminiApiKey(saved);
-      setApiKeyInput(saved);
-    }
-
     if (isOpen) {
-      checkGeminiServerStatus()
+    try { localStorage.removeItem('mess-gemini-key'); } catch {}
+    checkGeminiServerStatus()
         .then((res) => setIsServerConfigured(res.configured))
         .catch(() => setIsServerConfigured(false));
     }
@@ -208,7 +205,7 @@ export default function ReceiptScannerModal({
       setImagePreview(base64);
 
       startTransition(async () => {
-        const res = await scanReceiptWithGemini(base64, mimeType, geminiApiKey);
+        const res = await scanReceiptWithGemini(base64, mimeType, geminiApiKey, sessionId);
 
         if (!res.success) {
           if (res.error === 'NO_API_KEY') {
@@ -269,13 +266,13 @@ export default function ReceiptScannerModal({
       return;
     }
     setGeminiApiKey(trimmed);
-    localStorage.setItem('mess-gemini-key', trimmed);
+    try { localStorage.removeItem('mess-gemini-key'); } catch {}
     setErrorMsg(null);
 
     if (imagePreview) {
       setStep('analyzing');
       startTransition(async () => {
-        const res = await scanReceiptWithGemini(imagePreview, 'image/jpeg', trimmed);
+        const res = await scanReceiptWithGemini(imagePreview, 'image/jpeg', trimmed, sessionId);
         if (!res.success) {
           setErrorMsg(res.error || 'Erreur lors de l\'analyse');
           setStep('upload');

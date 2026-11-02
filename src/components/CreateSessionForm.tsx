@@ -117,7 +117,7 @@ export default function CreateSessionForm({
       return;
     }
 
-    if (trimmedPassword.length < 2) {
+    if (trimmedPassword.length < 8) {
       setError(t.createSession.passwordLengthError);
       return;
     }
@@ -131,14 +131,6 @@ export default function CreateSessionForm({
         );
         const newSession = await createSession(trimmed, initialParticipants, trimmedPassword);
         
-        // Save creator auth key to localStorage immediately
-        if (typeof window !== 'undefined') {
-          try {
-            localStorage.setItem(`mess_auth_${newSession.id}`, trimmedPassword);
-          } catch (e) {
-            console.error('Failed to save session key in localStorage', e);
-          }
-        }
 
         setIsOpen(false);
         router.push(`/session/${newSession.id}`);
@@ -263,6 +255,8 @@ export default function CreateSessionForm({
                 <div className="relative">
                   <input
                     id="session-password"
+                    minLength={8}
+                    maxLength={64}
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}

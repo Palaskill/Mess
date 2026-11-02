@@ -31,7 +31,7 @@ import BillTab from '@/components/BillTab';
 import ThemeToggle from '@/components/ThemeToggle';
 import LanguageToggle from '@/components/LanguageToggle';
 import { getUnassignedQuantity } from '@/lib/calculations';
-import { verifySessionPassword } from '@/lib/actions';
+import { verifySessionPassword, getSessionAccess, lockSession } from '@/lib/actions';
 import { useLanguage } from '@/lib/i18n';
 
 interface SessionViewProps {
@@ -73,7 +73,7 @@ export default function SessionView({
   const isClosed = session.status === 'closed';
   const hasPassword = Boolean(session.has_password);
 
-  const [isUnlocked, setIsUnlocked] = useState<boolean>(!hasPassword);
+  const [isUnlocked, setIsUnlocked] = useState<boolean>(false);
   const [isUnlockModalOpen, setIsUnlockModalOpen] = useState(false);
   const [unlockPassword, setUnlockPassword] = useState('');
   const [showUnlockPassword, setShowUnlockPassword] = useState(false);
@@ -83,21 +83,17 @@ export default function SessionView({
 
   useEffect(() => {
     setMounted(true);
-    if (hasPassword) {
-      try {
-        const saved = localStorage.getItem(`mess_auth_${session.id}`);
-        if (saved) {
-          setIsUnlocked(true);
-        } else {
-          setIsUnlocked(false);
-        }
-      } catch {
-        setIsUnlocked(false);
-      }
-    } else {
-      setIsUnlocked(true);
-    }
-  }, [session.id, hasPassword]);
+    let active = true;
+    // Remove legacy plaintext credentials; authorization now lives in HttpOnly cookies.
+    try { localStorage.removeItem(`mess_auth_${session.id}`); } catch {}
+    const loadAccess = async () => {
+      let allowed = await getSessionAccess(session.id);
+      if (!allowed && !hasPassword && !isClosed) allowed = (await verifySessionPassword(session.id, '')).success;
+      if (active) setIsUnlocked(allowed);
+    };
+    void loadAccess();
+    return () => { active = false; };
+  }, [session.id, hasPassword, isClosed]);
 
   // Lock body scroll when unlock modal is open
   useEffect(() => {
@@ -122,9 +118,6 @@ export default function SessionView({
     startVerifyTransition(async () => {
       const res = await verifySessionPassword(session.id, trimmed);
       if (res.success) {
-        try {
-          localStorage.setItem(`mess_auth_${session.id}`, trimmed);
-        } catch {}
         setIsUnlocked(true);
         setIsUnlockModalOpen(false);
         setUnlockPassword('');
@@ -135,10 +128,11 @@ export default function SessionView({
   };
 
   const handleLockSession = () => {
-    try {
-      localStorage.removeItem(`mess_auth_${session.id}`);
-    } catch {}
-    setIsUnlocked(false);
+    startVerifyTransition(async () => {
+      const result = await lockSession(session.id);
+      if (result.success) setIsUnlocked(false);
+      else window.alert(result.error || t.common.error);
+    });
   };
 
   const canEdit = !isClosed && isUnlocked;

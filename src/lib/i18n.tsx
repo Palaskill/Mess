@@ -315,7 +315,7 @@ export const translations: Record<Language, Translations> = {
       creating: 'Création...',
       nameRequiredError: 'Veuillez entrer un nom pour la session',
       passwordRequiredError: 'Veuillez définir un mot de passe pour verrouiller les modifications',
-      passwordLengthError: 'Le mot de passe doit comporter au moins 2 caractères',
+      passwordLengthError: 'Le mot de passe doit comporter au moins 8 caractères',
     },
   },
   ar: {
@@ -471,7 +471,7 @@ export const translations: Record<Language, Translations> = {
       creating: 'جارٍ الإنشاء...',
       nameRequiredError: 'يرجى إدخال اسم للجلسة',
       passwordRequiredError: 'يرجى تحديد كلمة مرور لحماية التعديلات',
-      passwordLengthError: 'يجب أن تتكون كلمة المرور من حرفين على الأقل',
+      passwordLengthError: 'يجب أن تتكون كلمة المرور من 8 أحرف على الأقل',
     },
   },
   en: {
@@ -627,7 +627,7 @@ export const translations: Record<Language, Translations> = {
       creating: 'Creating...',
       nameRequiredError: 'Please enter a session name',
       passwordRequiredError: 'Please set a password to lock modifications',
-      passwordLengthError: 'Password must be at least 2 characters',
+      passwordLengthError: 'Password must be at least 8 characters',
     },
   },
 };

@@ -1,10 +1,9 @@
 'use server';
 
 import { separateSharedUnits } from '@/lib/shared-orders';
-import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
-import crypto from 'crypto';
-import { createClient } from '@/utils/supabase/server';
+import { sessionClient, requireSessionEditor, requireMenuEditor, saveSessionGrant, sessionToken, revokeSessionGrant, assertSessionId } from '@/lib/security/session-access';
+import { publicSession, validQuantity, validPrice, MAX_BATCH_ITEMS, MAX_EXPANDED_ORDERS } from '@/lib/security/validation';
 import {
   MenuItem,
   Session,
@@ -20,8 +19,7 @@ export interface SessionWithCount extends Session {
 
 // Helper to get supabase client
 async function getSupabase() {
-  const cookieStore = await cookies();
-  return createClient(cookieStore);
+  return sessionClient();
 }
 
 // ==========================================
@@ -143,6 +141,10 @@ export async function getActiveMenuItems(): Promise<MenuItem[]> {
   }
 }
 
+export async function getMenuAccess(): Promise<boolean> {
+  try { await requireMenuEditor(); return true; } catch { return false; }
+}
+
 export async function createMenuItem(formData: FormData): Promise<{ success: boolean; data?: MenuItem; error?: string }> {
   try {
     const name = (formData.get('name') as string)?.trim();
@@ -155,11 +157,11 @@ export async function createMenuItem(formData: FormData): Promise<{ success: boo
     }
 
     const price = parseFloat(priceStr);
-    if (isNaN(price) || price < 0) {
+    if (!validPrice(price)) {
       return { success: false, error: 'Invalid price' };
     }
 
-    const supabase = await getSupabase();
+    const supabase = await requireMenuEditor();
     const { data, error } = await supabase.from('menu_items').insert([
       {
         name,
@@ -199,11 +201,11 @@ export async function updateMenuItem(formData: FormData): Promise<{ success: boo
     }
 
     const price = parseFloat(priceStr);
-    if (isNaN(price) || price < 0) {
+    if (!validPrice(price)) {
       return { success: false, error: 'Invalid price' };
     }
 
-    const supabase = await getSupabase();
+    const supabase = await requireMenuEditor();
     const { error } = await supabase
       .from('menu_items')
       .update({
@@ -231,7 +233,7 @@ export async function updateMenuItem(formData: FormData): Promise<{ success: boo
 
 export async function deleteMenuItem(id: string): Promise<{ success: boolean; error?: string }> {
   try {
-    const supabase = await getSupabase();
+    const supabase = await requireMenuEditor();
     const { error } = await supabase.from('menu_items').delete().eq('id', id);
 
     if (error) {
@@ -251,121 +253,33 @@ export async function deleteMenuItem(id: string): Promise<{ success: boolean; er
 // 2. SESSIONS & ACCESS CONTROL
 // ==========================================
 
-function hashSessionPassword(pwd: string): string {
-  return crypto.createHash('sha256').update(pwd.trim()).digest('hex');
-}
-
-function parseSessionRecord<T extends { name: string; password_hash?: string | null }>(
-  raw: T
-): T & { has_password: boolean } {
-  const rawName = raw.name || '';
-  const match = rawName.match(/^([\s\S]*?)::auth:([a-f0-9]+)$/);
-  if (match) {
-    return {
-      ...raw,
-      name: match[1],
-      has_password: true,
-    };
-  }
-  if (raw.password_hash) {
-    return {
-      ...raw,
-      has_password: true,
-    };
-  }
-  return {
-    ...raw,
-    has_password: false,
-  };
-}
-
-function extractPasswordHash(rawName: string, directHash?: string | null): string | null {
-  if (directHash) return directHash;
-  const match = (rawName || '').match(/^([\s\S]*?)::auth:([a-f0-9]+)$/);
-  return match ? match[2] : null;
-}
-
-export async function verifySessionPassword(
-  sessionId: string,
-  password: string
-): Promise<{ success: boolean; error?: string }> {
+export async function verifySessionPassword(sessionId: string, password: string): Promise<{ success: boolean; error?: string }> {
   try {
-    const supabase = await getSupabase();
-    const { data, error } = await supabase
-      .from('sessions')
-      .select('*')
-      .eq('id', sessionId)
-      .single();
+    assertSessionId(sessionId);
+    if (typeof password !== 'string' || password.length > 256) return { success: false, error: 'Mot de passe invalide' };
+    const client = await getSupabase();
+    const { data: token, error } = await client.rpc('mess_unlock_session', { p_session_id: sessionId, p_password: password.trim() });
+    if (error || !token) return { success: false, error: 'Mot de passe incorrect, session indisponible ou trop de tentatives. Réessayez dans une minute.' };
+    await saveSessionGrant(sessionId, token);
+    return { success: true };
+  } catch { return { success: false, error: 'Impossible de déverrouiller la session.' }; }
+}
 
-    if (error || !data) {
-      return { success: false, error: 'Session introuvable' };
-    }
-
-    const storedHash = extractPasswordHash(data.name, data.password_hash);
-    if (!storedHash) {
-      // Session without password (open session)
-      return { success: true };
-    }
-
-    const inputHash = hashSessionPassword(password);
-    if (inputHash === storedHash) {
-      return { success: true };
-    }
-
-    return { success: false, error: 'Mot de passe incorrect' };
-  } catch (err: any) {
-    return { success: false, error: err?.message || 'Erreur lors de la vérification' };
-  }
+export async function getSessionAccess(sessionId: string): Promise<boolean> {
+  try { await requireSessionEditor(sessionId, false); return true; } catch { return false; }
+}
+export async function lockSession(sessionId: string): Promise<{ success: boolean; error?: string }> {
+  try { await revokeSessionGrant(sessionId); return { success: true }; }
+  catch { return { success: false, error: 'Impossible de verrouiller la session.' }; }
 }
 
 export async function getSessions(): Promise<SessionWithCount[]> {
   try {
-    const supabase = await getSupabase();
-    const { data, error } = await supabase
-      .from('sessions')
-      .select('*, participants(count)')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching sessions with count:', error);
-      const { data: simpleData, error: simpleError } = await supabase
-        .from('sessions')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (simpleError) {
-        console.error('Error fetching sessions fallback:', simpleError);
-        return [];
-      }
-      return (simpleData || []).map((s: any) => {
-        const parsed = parseSessionRecord(s);
-        return {
-          id: parsed.id,
-          name: parsed.name,
-          status: parsed.status,
-          created_at: parsed.created_at,
-          has_password: parsed.has_password,
-        };
-      });
-    }
-
-    return (data || []).map((s: any) => {
-      const parsed = parseSessionRecord(s);
-      return {
-        id: parsed.id,
-        name: parsed.name,
-        status: parsed.status,
-        created_at: parsed.created_at,
-        has_password: parsed.has_password,
-        participant_count: Array.isArray(s.participants)
-          ? (s.participants[0]?.count ?? 0)
-          : 0,
-      };
-    });
-  } catch (err) {
-    console.error('Failed to get sessions:', err);
-    return [];
-  }
+    const client = await getSupabase();
+    const { data, error } = await client.rpc('mess_sessions');
+    if (error) return [];
+    return (data || []).map((raw: Record<string, unknown>) => ({ ...publicSession(raw), participant_count: Number(raw.participant_count) || 0 }));
+  } catch { return []; }
 }
 
 const DEFAULT_PARTICIPANT_COLORS = [
@@ -411,49 +325,24 @@ export async function createSession(
     throw new Error('Le nom de la session est obligatoire');
   }
 
-  // Format stored name with password hash if provided
-  let storedName = name;
-  let pwdHash: string | null = null;
-  if (sessionPassword) {
-    pwdHash = hashSessionPassword(sessionPassword);
-    storedName = `${name}::auth:${pwdHash}`;
+  if (name.length > 80 || sessionPassword.trim().length < 8 || Buffer.byteLength(sessionPassword.trim(), 'utf8') > 72
+      || !Array.isArray(participantsList) || participantsList.length > 30
+      || participantsList.some(p => typeof p?.name !== 'string' || !p.name.trim() || p.name.length > 80 || !/^#[a-fA-F0-9]{6}$/.test(p.color))) {
+    throw new Error('Nom ou participants invalides. Le mot de passe doit contenir au moins 8 caractères (72 octets maximum).');
   }
-
   const supabase = await getSupabase();
-  const insertPayload: any = { name: storedName, status: 'open' };
-
-  const { data: session, error } = await supabase
-    .from('sessions')
-    .insert([insertPayload])
-    .select()
-    .single();
-
-  if (error || !session) {
-    console.error('Error creating session:', error);
-    throw new Error(error?.message || 'Failed to create session');
-  }
-
-  // Insert initial participants if provided
-  if (participantsList && participantsList.length > 0) {
-    const toInsert = participantsList.map((p) => ({
-      session_id: session.id,
-      name: p.name,
-      color: p.color || '#3B82F6',
-    }));
-    const { error: pError } = await supabase.from('participants').insert(toInsert);
-    if (pError) {
-      console.error('Error inserting initial participants:', pError);
-    }
-  }
-
+  const { data, error } = await supabase.rpc('mess_create_session', {
+    p_name: name, p_password: sessionPassword.trim(), p_participants: participantsList,
+  });
+  if (error || !data?.session || !data?.token) throw new Error('Création impossible. Vérifiez que la migration de sécurité est installée.');
+  await saveSessionGrant(data.session.id, data.token);
   revalidatePath('/');
-  const parsed = parseSessionRecord(session);
-  return parsed as Session;
+  return publicSession(data.session) as Session;
 }
 
 export async function closeSession(id: string): Promise<{ success: boolean; error?: string }> {
   try {
-    const supabase = await getSupabase();
+    const supabase = await requireSessionEditor(id);
     const { error } = await supabase
       .from('sessions')
       .update({ status: 'closed' })
@@ -478,33 +367,14 @@ export async function deleteSession(
   password?: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const supabase = await getSupabase();
-
-    // Verify session password if protected
-    const { data: sessionData } = await supabase
-      .from('sessions')
-      .select('*')
-      .eq('id', id)
-      .single();
-
-    if (sessionData) {
-      const storedHash = extractPasswordHash(sessionData.name, sessionData.password_hash);
-      if (storedHash) {
-        if (!password) {
-          return { success: false, error: 'Mot de passe requis pour supprimer cette session' };
-        }
-        if (hashSessionPassword(password) !== storedHash) {
-          return { success: false, error: 'Mot de passe incorrect' };
-        }
-      }
+    if (!(await getSessionAccess(id))) {
+      const unlocked = await verifySessionPassword(id, password || '');
+      if (!unlocked.success) return unlocked;
     }
-
-    const { error } = await supabase.from('sessions').delete().eq('id', id);
-
-    if (error) {
-      console.error('Error deleting session:', error);
-      return { success: false, error: error.message };
-    }
+    const supabase = await requireSessionEditor(id, false);
+    const { data, error } = await supabase.from('sessions').delete().eq('id', id).select('id').single();
+    if (error || !data) return { success: false, error: 'Suppression refusée.' };
+    await revokeSessionGrant(id);
 
     revalidatePath('/');
     return { success: true };
@@ -548,7 +418,7 @@ export async function addParticipant(formData: FormData): Promise<{ success: boo
       return { success: false, error: 'Session ID and Name are required' };
     }
 
-    const supabase = await getSupabase();
+    const supabase = await requireSessionEditor(sessionId);
     const { error } = await supabase.from('participants').insert([
       {
         session_id: sessionId,
@@ -573,8 +443,8 @@ export async function addParticipant(formData: FormData): Promise<{ success: boo
 
 export async function removeParticipant(id: string, sessionId: string): Promise<{ success: boolean; error?: string }> {
   try {
-    const supabase = await getSupabase();
-    const { error } = await supabase.from('participants').delete().eq('id', id);
+    const supabase = await requireSessionEditor(sessionId);
+    const { error } = await supabase.from('participants').delete().eq('id', id).eq('session_id', sessionId);
 
     if (error) {
       console.error('Error removing participant:', error);
@@ -588,6 +458,20 @@ export async function removeParticipant(id: string, sessionId: string): Promise<
     console.error('Failed to remove participant:', err);
     return { success: false, error: err?.message || 'Failed to remove participant' };
   }
+}
+
+async function requireParticipantsInSession(client: Awaited<ReturnType<typeof getSupabase>>, sessionId: string, participantIds: string[]) {
+  const ids = [...new Set(participantIds)];
+  if (ids.length === 0) return;
+  if (participantIds.length > 300 || ids.some(id => typeof id !== 'string')) throw new Error('Participants invalides');
+  const { data, error } = await client.from('participants').select('id').eq('session_id', sessionId).in('id', ids);
+  if (error || data?.length !== ids.length) throw new Error('Chaque participant doit appartenir à cette session.');
+}
+async function requireAssignmentScope(client: Awaited<ReturnType<typeof getSupabase>>, sessionId: string, orderId: string, participantId: string) {
+  await requireParticipantsInSession(client, sessionId, [participantId]);
+  const { data, error } = await client.from('orders').select('id,quantity,split_type').eq('id', orderId).eq('session_id', sessionId).single();
+  if (error || !data) throw new Error('La commande doit appartenir à cette session.');
+  return data;
 }
 
 // ==========================================
@@ -630,12 +514,15 @@ export async function createOrder(formData: FormData): Promise<{ success: boolea
     const quantity = parseInt(quantityStr, 10) || 1;
     const unitPrice = parseFloat(unitPriceStr);
 
-    if (quantity <= 0 || isNaN(unitPrice) || unitPrice < 0) {
+    if (!validQuantity(quantity) || !validPrice(unitPrice) || itemName.length > 160 || !['shared','individual'].includes(splitType)) {
       return { success: false, error: 'Invalid quantity or price' };
     }
 
     let finalMenuItemId = menuItemId;
-    const supabase = await getSupabase();
+    const supabase = await requireSessionEditor(sessionId);
+
+    const participantIds = String(formData.get('assigned_participant_ids') || '').split(',').filter(Boolean);
+    await requireParticipantsInSession(supabase, sessionId, participantIds);
 
     // Dynamically insert into menu_items if not already present
     if (!finalMenuItemId && itemName) {
@@ -747,17 +634,17 @@ export async function createBatchOrders(
       return { success: false, error: 'At least one item is required' };
     }
 
-    const validItems = separateSharedUnits(items.filter((item) => {
-      const unitPrice = parseFloat(String(item.unit_price));
-      const itemName = item.item_name?.trim();
-      return itemName && !isNaN(unitPrice) && unitPrice >= 0;
-    }));
-
-    if (validItems.length === 0) {
-      return { success: false, error: 'No valid items to order' };
+    if (!Array.isArray(items) || items.length > MAX_BATCH_ITEMS || items.some(item =>
+      !item || typeof item.item_name !== 'string' || !item.item_name.trim() || item.item_name.length > 160 ||
+      !validQuantity(item.quantity) || !validPrice(item.unit_price) || !['shared','individual'].includes(item.split_type) ||
+      (item.assigned_participant_ids !== undefined && (!Array.isArray(item.assigned_participant_ids) || item.assigned_participant_ids.length > 300)))) {
+      return { success: false, error: 'Articles invalides ou limite de commande dépassée.' };
     }
-
-    const supabase = await getSupabase();
+    const expandedCount = items.reduce((n,item) => n + (item.split_type === 'shared' ? item.quantity : 1), 0);
+    if (expandedCount > MAX_EXPANDED_ORDERS) return { success: false, error: 'Trop d’articles à importer.' };
+    const supabase = await requireSessionEditor(sessionId);
+    await requireParticipantsInSession(supabase, sessionId, items.flatMap(item => item.assigned_participant_ids || []));
+    const validItems = separateSharedUnits(items);
 
     // 0. Auto-sync missing items to menu_items catalog dynamically
     const { data: currentCatalog } = await supabase
@@ -903,8 +790,8 @@ export async function createBatchOrders(
 
 export async function deleteOrder(id: string, sessionId: string): Promise<{ success: boolean; error?: string }> {
   try {
-    const supabase = await getSupabase();
-    const { error } = await supabase.from('orders').delete().eq('id', id);
+    const supabase = await requireSessionEditor(sessionId);
+    const { error } = await supabase.from('orders').delete().eq('id', id).eq('session_id', sessionId);
 
     if (error) {
       console.error('Error deleting order:', error);
@@ -931,7 +818,12 @@ export async function updateOrder(
   }
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const supabase = await getSupabase();
+    const supabase = await requireSessionEditor(sessionId);
+    if ((updates.quantity !== undefined && !validQuantity(updates.quantity)) ||
+        (updates.unit_price !== undefined && !validPrice(updates.unit_price)) ||
+        (updates.item_name !== undefined && (!updates.item_name.trim() || updates.item_name.length > 160))) {
+      return { success: false, error: 'Quantité, prix ou nom invalide.' };
+    }
     const payload: any = {};
     if (updates.unit_price !== undefined) {
       payload.unit_price = updates.unit_price;
@@ -946,7 +838,7 @@ export async function updateOrder(
     const { error } = await supabase
       .from('orders')
       .update(payload)
-      .eq('id', id);
+      .eq('id', id).eq('session_id', sessionId);
 
     if (error) {
       console.error('Error updating order:', error);
@@ -1000,7 +892,11 @@ export async function assignItem(
       return unassignItem(orderId, participantId, sessionId);
     }
 
-    const supabase = await getSupabase();
+    const supabase = await requireSessionEditor(sessionId);
+    const scopedOrder = await requireAssignmentScope(supabase, sessionId, orderId, participantId);
+    if (!validQuantity(quantity) || (scopedOrder.split_type === 'shared' && quantity !== 1) || quantity > scopedOrder.quantity) {
+      return { success: false, error: 'Quantité d’affectation invalide.' };
+    }
 
     // Upsert assignment by unique key (order_id, participant_id)
     const { error } = await supabase
@@ -1035,7 +931,8 @@ export async function unassignItem(
   sessionId: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const supabase = await getSupabase();
+    const supabase = await requireSessionEditor(sessionId);
+    await requireAssignmentScope(supabase, sessionId, orderId, participantId);
     const { error } = await supabase
       .from('assignments')
       .delete()
@@ -1085,14 +982,14 @@ export async function getSessionData(sessionId: string): Promise<{
     const supabase = await getSupabase();
 
     const [sessionRes, participantsRes, ordersRes, assignmentsRes] = await Promise.all([
-      supabase.from('sessions').select('*').eq('id', sessionId).single(),
+      supabase.rpc('mess_session', { p_session_id: sessionId }),
       supabase.from('participants').select('*').eq('session_id', sessionId).order('joined_at', { ascending: true }),
       supabase.from('orders').select('*').eq('session_id', sessionId).order('created_at', { ascending: false }),
       supabase.from('assignments').select('*, participant:participants!inner(*)').eq('participant.session_id', sessionId),
     ]);
 
     return {
-      session: sessionRes.data ? (parseSessionRecord(sessionRes.data) as Session) : null,
+      session: sessionRes.data ? (publicSession(sessionRes.data) as Session) : null,
       participants: (participantsRes.data || []) as Participant[],
       orders: (ordersRes.data || []) as Order[],
       assignments: (assignmentsRes.data || []) as (Assignment & { participant: Participant })[],

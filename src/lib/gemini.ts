@@ -1,5 +1,9 @@
 'use server';
 
+import { requireSessionEditor, sessionToken } from '@/lib/security/session-access';
+import { validateReceiptImage, boundedResponseJSON } from '@/lib/security/receipt';
+import { validQuantity, validPrice } from '@/lib/security/validation';
+
 export interface ParsedReceiptItem {
   id?: string;
   name: string;
@@ -87,9 +91,16 @@ export async function checkGeminiServerStatus(): Promise<{ configured: boolean }
 export async function scanReceiptWithGemini(
   base64Data: string,
   mimeType: string,
-  clientApiKey?: string
+  clientApiKey?: string,
+  sessionId?: string
 ): Promise<{ success: boolean; data?: ParsedReceiptResult; error?: string }> {
+  let scanClient: Awaited<ReturnType<typeof requireSessionEditor>> | undefined;
+  let lease: string | undefined;
+  let grant = '';
   try {
+    if (!sessionId) return { success: false, error: 'Déverrouillez une session pour scanner une addition.' };
+    scanClient = await requireSessionEditor(sessionId);
+    const cleanBase64 = validateReceiptImage(base64Data, mimeType);
     const apiKey = (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim().length > 0)
       ? process.env.GEMINI_API_KEY.trim()
       : (clientApiKey && clientApiKey.trim().length > 0 ? clientApiKey.trim() : '');
@@ -101,14 +112,11 @@ export async function scanReceiptWithGemini(
       };
     }
 
-    // Clean base64 string if data URL prefix was included
-    let cleanBase64 = base64Data;
-    if (cleanBase64.includes(',')) {
-      cleanBase64 = cleanBase64.split(',')[1];
-    }
-    cleanBase64 = cleanBase64.replace(/\s/g, '');
-
-    const validMimeType = mimeType || 'image/jpeg';
+    grant = await sessionToken(sessionId);
+    const { data: reserved, error: reserveError } = await scanClient.rpc('mess_reserve_scan', { p_session_id: sessionId, p_token: grant });
+    if (reserveError || !reserved) return { success: false, error: 'Un scan est déjà en cours ou la limite de scans est atteinte. Réessayez plus tard.' };
+    lease = reserved;
+    const validMimeType = mimeType;
 
     // Primary: Google's strongest free multimodal model (Gemini 3.5 Flash) for maximum OCR intelligence & handwriting recognition
     // Fallbacks: Ultra-fast Gemini 3.5 Flash Lite
@@ -120,8 +128,10 @@ export async function scanReceiptWithGemini(
     let lastError = '';
 
     for (const model of models) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 20000);
       try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
         const payload = {
           contents: [
@@ -139,30 +149,28 @@ export async function scanReceiptWithGemini(
           ],
           generationConfig: {
             temperature: 0.1,
+            maxOutputTokens: 8192,
           },
         };
-
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 20000);
 
         const res = await fetch(url, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'x-goog-api-key': apiKey,
           },
           body: JSON.stringify(payload),
           signal: controller.signal,
         });
-        clearTimeout(timeoutId);
 
         if (!res.ok) {
-          const errBody = await res.text();
-          console.warn(`Gemini (${model}) returned HTTP ${res.status}:`, errBody);
+          await res.body?.cancel();
+          console.warn(`Gemini (${model}) HTTP ${res.status}`);
           lastError = `Erreur API Gemini (${model}): HTTP ${res.status}`;
           continue; // try next model
         }
 
-        const json = await res.json();
+        const json: any = await boundedResponseJSON(res);
         const parts = json?.candidates?.[0]?.content?.parts || [];
         const textPart = parts.find((p: any) => p.text && !p.thought) || parts[0];
         const candidateText = textPart?.text;
@@ -183,7 +191,7 @@ export async function scanReceiptWithGemini(
         const parsed: ParsedReceiptResult = JSON.parse(cleanedJsonText);
 
         // Sanitize & validate items
-        if (!parsed.items || !Array.isArray(parsed.items) || parsed.items.length === 0) {
+        if (!parsed.items || !Array.isArray(parsed.items) || parsed.items.length === 0 || parsed.items.length > 100) {
           return {
             success: false,
             error: 'Aucun article détecté sur cette photo. Essayez avec un meilleur éclairage ou un cadrage plus serré.',
@@ -191,7 +199,7 @@ export async function scanReceiptWithGemini(
         }
 
         // Detect currency
-        const detectedCurrency = parsed.currency || 'TND';
+        const detectedCurrency = typeof parsed.currency === 'string' && /^[A-Z]{3}$/.test(parsed.currency.toUpperCase()) ? parsed.currency.toUpperCase() : 'TND';
 
         // Use 3 decimal places for TND (millimes), 2 for others
         const isTND = detectedCurrency.toUpperCase() === 'TND';
@@ -202,11 +210,12 @@ export async function scanReceiptWithGemini(
           .map((item, idx) => {
             const qty = Math.max(1, parseInt(String(item.quantity), 10) || 1);
             let unitPrice = parseFloat(String(item.unit_price));
-            if (isNaN(unitPrice) || unitPrice < 0) {
+            if (!validPrice(unitPrice)) {
               unitPrice = 0;
             }
             unitPrice = Math.round(unitPrice * roundFactor) / roundFactor;
 
+            if (!validQuantity(qty) || item.name.trim().length > 160) throw new Error('Article hors limites');
             const category: 'drinks' | 'food' | 'other' =
               item.category === 'drinks' || item.category === 'food' || item.category === 'other'
                 ? item.category
@@ -234,19 +243,19 @@ export async function scanReceiptWithGemini(
         return {
           success: true,
           data: {
-            restaurant_name: parsed.restaurant_name || undefined,
+            restaurant_name: typeof parsed.restaurant_name === 'string' ? parsed.restaurant_name.slice(0,160) : undefined,
             currency: detectedCurrency,
             items: sanitizedItems,
-            subtotal: parsed.subtotal ? Math.round(parsed.subtotal * roundFactor) / roundFactor : undefined,
-            tax: parsed.tax ? Math.round(parsed.tax * roundFactor) / roundFactor : undefined,
-            tip: parsed.tip ? Math.round(parsed.tip * roundFactor) / roundFactor : undefined,
-            total: parsed.total ? Math.round(parsed.total * roundFactor) / roundFactor : undefined,
+            subtotal: validPrice(parsed.subtotal) ? Math.round(parsed.subtotal * roundFactor) / roundFactor : undefined,
+            tax: validPrice(parsed.tax) ? Math.round(parsed.tax * roundFactor) / roundFactor : undefined,
+            tip: validPrice(parsed.tip) ? Math.round(parsed.tip * roundFactor) / roundFactor : undefined,
+            total: validPrice(parsed.total) ? Math.round(parsed.total * roundFactor) / roundFactor : undefined,
           },
         };
       } catch (modelErr: any) {
-        console.warn(`Error trying ${model}:`, modelErr);
-        lastError = modelErr?.message || 'Erreur lors de l\'appel à Gemini';
-      }
+        console.warn(`Gemini (${model}) scan failed`);
+        lastError = 'Analyse indisponible ou réponse invalide. Réessayez.';
+      } finally { clearTimeout(timeoutId); }
     }
 
     return {
@@ -254,10 +263,14 @@ export async function scanReceiptWithGemini(
       error: lastError || 'Impossible d\'analyser l\'addition. Vérifiez votre clé API Gemini.',
     };
   } catch (err: any) {
-    console.error('Fatal error in scanReceiptWithGemini:', err);
+    console.error('Receipt scan rejected or unavailable');
     return {
       success: false,
-      error: err?.message || 'Une erreur inattendue est survenue lors de l\'analyse.',
+      error: 'Scan refusé : session verrouillée, image invalide ou service indisponible.',
     };
+  } finally {
+    if (scanClient && lease) {
+      try { await scanClient.rpc('mess_finish_scan', { p_lease: lease, p_token: grant }); } catch { /* Lease expires automatically after a crash/outage. */ }
+    }
   }
 }

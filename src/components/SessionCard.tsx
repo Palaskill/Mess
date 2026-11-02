@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Users, Trash2, ArrowRight } from 'lucide-react';
 import { Session } from '@/types';
-import { deleteSession } from '@/lib/actions';
+import { getSessionAccess, deleteSession } from '@/lib/actions';
 import { timeAgo } from '@/lib/utils';
 import SpotlightCard from '@/components/reactbits/SpotlightCard';
 import { useLanguage } from '@/lib/i18n';
@@ -43,27 +43,11 @@ export default function SessionCard({ session }: SessionCardProps) {
     let passwordToDelete: string | undefined = undefined;
 
     if (session.has_password) {
-      let savedKey: string | null = null;
-      try {
-        savedKey = localStorage.getItem(`mess_auth_${session.id}`);
-      } catch {}
-
-      if (!savedKey) {
-        const input = window.prompt(
-          'Cette session est protégée par mot de passe.\nEntrez le mot de passe créateur pour confirmer la suppression :'
-        );
-        if (input === null) {
-          setShowConfirm(false);
-          return;
-        }
-        if (!input.trim()) {
-          alert('Mot de passe requis pour supprimer cette session');
-          setShowConfirm(false);
-          return;
-        }
+      try { localStorage.removeItem(`mess_auth_${session.id}`); } catch {}
+      if (!(await getSessionAccess(session.id))) {
+        const input = window.prompt('Entrez le mot de passe créateur pour supprimer cette session :');
+        if (input === null || !input.trim()) { setShowConfirm(false); return; }
         passwordToDelete = input.trim();
-      } else {
-        passwordToDelete = savedKey;
       }
     }
 

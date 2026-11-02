@@ -1,5 +1,6 @@
 -- MEss Database Schema
--- Run this in the Supabase SQL Editor
+-- Initial schema only. Then apply migrations/20261102_security.sql.
+-- This legacy bootstrap by itself is NOT the secure production configuration.
 
 -- 1. Menu Items (managed by admin)
 CREATE TABLE menu_items (

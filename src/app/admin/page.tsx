@@ -1,5 +1,6 @@
 import { SlidersHorizontal } from 'lucide-react';
 import { getMenuItems } from '@/lib/actions';
+import AdminHeading from '@/components/AdminHeading';
 import AdminMenuManager from '@/components/AdminMenuManager';
 import ThemeToggle from '@/components/ThemeToggle';
 import LanguageToggle from '@/components/LanguageToggle';
@@ -19,14 +20,7 @@ export default async function AdminPage() {
               <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-purple-500/30 flex items-center justify-center text-2xl shadow-inner shrink-0">
                 <SlidersHorizontal aria-hidden="true" className="w-6 h-6" />
               </div>
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-                  Menu Manager
-                </h1>
-                <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
-                  Set bar items, prices, and default split rules
-                </p>
-              </div>
+              <AdminHeading />
             </div>
 
             <div className="flex items-center gap-2 shrink-0">

@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { UserPlus, Users, Trash2, X, Lock } from 'lucide-react';
 import { Participant, PARTICIPANT_COLORS, Assignment } from '@/types';
 import { addParticipant, removeParticipant } from '@/lib/actions';
+import { useDialogFocus } from '@/hooks/useDialogFocus';
 import { useLanguage } from '@/lib/i18n';
 
 interface FriendsTabProps {
@@ -34,15 +35,7 @@ export default function FriendsTab({
     setMounted(true);
   }, []);
 
-  useEffect(() => {
-    if (isAddOpen) {
-      const originalOverflow = document.body.style.overflow;
-      document.body.style.overflow = 'hidden';
-      return () => {
-        document.body.style.overflow = originalOverflow;
-      };
-    }
-  }, [isAddOpen]);
+  useDialogFocus(mounted && isAddOpen, () => setIsAddOpen(false));
 
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -114,7 +107,7 @@ export default function FriendsTab({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="friends-workspace space-y-6">
       {/* Header with Friend count and Add button */}
       <div className="flex items-center justify-between">
         <div>
@@ -150,7 +143,7 @@ export default function FriendsTab({
       {participants.length === 0 ? (
         <div className="text-center py-12 px-4 rounded-3xl border border-dashed border-slate-700 bg-slate-800/30">
           <div className="w-16 h-16 mx-auto mb-3 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center justify-center text-3xl shadow-inner">
-            👋
+            <Users aria-hidden="true" className="w-7 h-7 text-blue-400" />
           </div>
           <h3 className="text-base font-bold text-white mb-1">{t.friends.noFriends}</h3>
           <p className="text-xs text-slate-400 mb-4 max-w-xs mx-auto">
@@ -159,7 +152,7 @@ export default function FriendsTab({
           {!isClosed && (
             <button
               onClick={() => setIsAddOpen(true)}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-600/20 active:scale-95 transition-all cursor-pointer min-h-[40px]"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-600/20 active:scale-95 transition-all cursor-pointer min-h-[44px]"
             >
               <UserPlus className="w-4 h-4" />
               <span>{t.friends.addFirstFriend}</span>
@@ -167,13 +160,13 @@ export default function FriendsTab({
           )}
         </div>
       ) : (
-        <div className="grid gap-2.5">
+        <div className="grid gap-3 sm:grid-cols-2">
           {participants.map((p) => (
             <div
               key={p.id}
-              className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-800/90 border border-slate-700/80 shadow-md backdrop-blur-sm transition-all"
+              className="friend-card flex items-center justify-between gap-3 p-4 rounded-2xl bg-slate-800/90 border border-slate-700/80 shadow-md backdrop-blur-sm transition-all"
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 min-w-0">
                 <div
                   className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white text-base shadow-inner ring-2 ring-white/10"
                   style={{ backgroundColor: p.color, boxShadow: `0 0 12px ${p.color}50` }}
@@ -181,8 +174,8 @@ export default function FriendsTab({
                   {p.name.charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <h4 className="font-bold text-white text-sm">{p.name}</h4>
-                  <span className="text-[11px] text-slate-400">
+                  <h4 className="font-bold text-white text-sm break-words">{p.name}</h4>
+                  <span className="text-xs text-slate-400">
                     {t.friends.seated}{' '}
                     {new Date(p.joined_at).toLocaleTimeString([], {
                       hour: '2-digit',
@@ -212,6 +205,7 @@ export default function FriendsTab({
         <div
           role="dialog"
           aria-modal="true"
+          aria-labelledby="friend-dialog-title"
           className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in"
           onClick={(e) => {
             if (e.target === e.currentTarget) setIsAddOpen(false);
@@ -226,7 +220,7 @@ export default function FriendsTab({
             <div className="w-12 h-1.5 bg-slate-600 rounded-full mx-auto mb-4 sm:hidden shrink-0" />
 
             <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+              <h3 id="friend-dialog-title" className="text-lg font-bold text-white flex items-center gap-2">
                 <UserPlus className="w-5 h-5 text-blue-400" />
                 <span>{t.friends.modalTitle}</span>
               </h3>
@@ -234,24 +228,25 @@ export default function FriendsTab({
                 type="button"
                 onClick={() => setIsAddOpen(false)}
                 aria-label="Close dialog"
-                className="w-10 h-10 rounded-full bg-slate-800 active:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white active:scale-95 transition-all touch-manipulation cursor-pointer"
+                className="w-11 h-11 rounded-full bg-slate-800 active:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white active:scale-95 transition-all touch-manipulation cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {error && (
-              <div className="p-3 mb-4 rounded-xl bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs">
+              <div role="alert" className="p-3 mb-4 rounded-xl bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs">
                 {error}
               </div>
             )}
 
             <form onSubmit={handleAddSubmit} className="space-y-5">
               <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                <label htmlFor="friend-name" className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
                   {t.friends.friendName} *
                 </label>
                 <input
+                  id="friend-name"
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -274,7 +269,8 @@ export default function FriendsTab({
                     <button
                       key={color}
                       type="button"
-                      aria-label={`Select color ${color}`}
+                      aria-label={`${t.friends.friendColor} ${color}`}
+                      aria-pressed={selectedColor === color}
                       onClick={() => setSelectedColor(color)}
                       className={`w-11 h-11 rounded-full transition-transform touch-manipulation active:scale-95 flex items-center justify-center ${
                         selectedColor === color

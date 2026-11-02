@@ -7,6 +7,9 @@ import {
   updateMenuItem,
   deleteMenuItem,
 } from '@/lib/actions';
+import { useLanguage } from '@/lib/i18n';
+import { useDialogFocus } from '@/hooks/useDialogFocus';
+import { Search, Pencil } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 
 interface AdminMenuManagerProps {
@@ -14,6 +17,15 @@ interface AdminMenuManagerProps {
 }
 
 export default function AdminMenuManager({ initialItems }: AdminMenuManagerProps) {
+  const { language } = useLanguage();
+  const copy = language === 'fr' ? {
+    all: 'Tout', drinks: 'Boissons', food: 'Cuisine', other: 'Autres', search: 'Rechercher un article', add: 'Ajouter un article', empty: 'Aucun article trouvé', hint: 'Ajoutez un article ou modifiez votre recherche.', name: 'Nom de l’article', price: 'Prix (DT)', category: 'Catégorie', split: 'Répartition', shared: 'Partagé', individual: 'Individuel', hidden: 'Masqué', active: 'Actif', visible: 'Visible dans le menu', edit: 'Modifier', save: 'Enregistrer', saving: 'Enregistrement…', cancel: 'Annuler', close: 'Fermer', items: 'articles', remove: 'Supprimer'
+  } : language === 'ar' ? {
+    all: 'الكل', drinks: 'مشروبات', food: 'طعام', other: 'أخرى', search: 'البحث عن صنف', add: 'إضافة صنف', empty: 'لا توجد أصناف', hint: 'أضف صنفاً أو غيّر البحث.', name: 'اسم الصنف', price: 'السعر (د.ت)', category: 'الفئة', split: 'التقسيم', shared: 'مشترك', individual: 'فردي', hidden: 'مخفي', active: 'نشط', visible: 'ظاهر في القائمة', edit: 'تعديل', save: 'حفظ', saving: 'جارٍ الحفظ…', cancel: 'إلغاء', close: 'إغلاق', items: 'أصناف', remove: 'حذف'
+  } : {
+    all: 'All', drinks: 'Drinks', food: 'Food', other: 'Other', search: 'Search menu items', add: 'Add item', empty: 'No items found', hint: 'Add an item or change your search.', name: 'Item name', price: 'Price (DT)', category: 'Category', split: 'Default split', shared: 'Shared', individual: 'Individual', hidden: 'Hidden', active: 'Active', visible: 'Visible on menu', edit: 'Edit', save: 'Save changes', saving: 'Saving…', cancel: 'Cancel', close: 'Close', items: 'items', remove: 'Delete'
+  };
+  const [query, setQuery] = useState('');
   const [items, setItems] = useState<MenuItem[]>(initialItems);
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'drinks' | 'food' | 'other'>('all');
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -22,17 +34,18 @@ export default function AdminMenuManager({ initialItems }: AdminMenuManagerProps
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
+  useDialogFocus(isAddOpen || Boolean(editingItem), () => { if (!isPending) { setIsAddOpen(false); setEditingItem(null); } });
+
   // Filtered items
   const filteredItems = items.filter((item) => {
-    if (selectedCategory === 'all') return true;
-    return item.category === selectedCategory;
+    return (selectedCategory === 'all' || item.category === selectedCategory) && item.name.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase());
   });
 
   const categories = [
-    { id: 'all', label: 'All', icon: '🍽️' },
-    { id: 'drinks', label: 'Drinks', icon: '🍺' },
-    { id: 'food', label: 'Food', icon: '🍕' },
-    { id: 'other', label: 'Other', icon: '🍿' },
+    { id: 'all', label: copy.all, icon: '🍽️' },
+    { id: 'drinks', label: copy.drinks, icon: '🍺' },
+    { id: 'food', label: copy.food, icon: '🍕' },
+    { id: 'other', label: copy.other, icon: '🍿' },
   ];
 
   // Handle Add Item
@@ -72,7 +85,7 @@ export default function AdminMenuManager({ initialItems }: AdminMenuManagerProps
     });
   };
 
-  // Handle Edit Item
+  // Handle {copy.edit}
   const handleEditSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!editingItem) return;
@@ -128,12 +141,17 @@ export default function AdminMenuManager({ initialItems }: AdminMenuManagerProps
   };
 
   return (
-    <div className="space-y-6">
+    <div className="menu-workspace space-y-6">
+      <label className="menu-search flex items-center gap-3 p-3 rounded-2xl border border-slate-700 bg-slate-800">
+        <Search aria-hidden="true" className="w-5 h-5 shrink-0 text-slate-400" />
+        <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={copy.search} aria-label={copy.search} className="w-full min-w-0 bg-transparent text-base outline-none text-white" />
+      </label>
       {/* Category selector pills */}
       <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
         {categories.map((c) => (
           <button
             key={c.id}
+            aria-pressed={selectedCategory === c.id}
             onClick={() => setSelectedCategory(c.id as any)}
             className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all shrink-0 min-h-[44px] ${
               selectedCategory === c.id
@@ -150,7 +168,7 @@ export default function AdminMenuManager({ initialItems }: AdminMenuManagerProps
       {/* Item count & Quick Add Header */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-slate-400">
-          Showing <span className="font-semibold text-white">{filteredItems.length}</span> items
+          <span className="font-semibold text-white">{filteredItems.length}</span> {copy.items}
         </p>
         <button
           onClick={() => {
@@ -160,7 +178,7 @@ export default function AdminMenuManager({ initialItems }: AdminMenuManagerProps
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold shadow-lg shadow-blue-600/30 active:scale-95 transition-all min-h-[44px]"
         >
           <span className="text-lg leading-none">+</span>
-          Add Item
+          {copy.add}
         </button>
       </div>
 
@@ -168,17 +186,15 @@ export default function AdminMenuManager({ initialItems }: AdminMenuManagerProps
       {filteredItems.length === 0 ? (
         <div className="text-center py-12 px-4 rounded-2xl border border-dashed border-slate-700 bg-slate-800/30">
           <div className="text-4xl mb-3">📋</div>
-          <h3 className="text-base font-bold text-white mb-1">No items found</h3>
+          <h3 className="text-base font-bold text-white mb-1">{copy.empty}</h3>
           <p className="text-xs text-slate-400 mb-4">
-            {selectedCategory === 'all'
-              ? 'Add items to your bar menu so your friends can order easily.'
-              : `No items in ${selectedCategory} category yet.`}
+            {copy.hint}
           </p>
           <button
             onClick={() => setIsAddOpen(true)}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-xs font-semibold"
           >
-            + Add First Item
+            {copy.add}
           </button>
         </div>
       ) : (
@@ -186,7 +202,7 @@ export default function AdminMenuManager({ initialItems }: AdminMenuManagerProps
           {filteredItems.map((item) => (
             <div
               key={item.id}
-              className={`flex items-center justify-between p-4 rounded-2xl bg-slate-800/90 border transition-all ${
+              className={`menu-item flex items-center justify-between p-4 rounded-2xl bg-slate-800/90 border transition-all ${
                 item.is_active ? 'border-slate-700/80 shadow-md' : 'border-slate-800 opacity-60'
               }`}
             >
@@ -199,7 +215,7 @@ export default function AdminMenuManager({ initialItems }: AdminMenuManagerProps
                     <h4 className="font-bold text-white text-base truncate">{item.name}</h4>
                     {!item.is_active && (
                       <span className="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded bg-slate-700 text-slate-400">
-                        Hidden
+                        {copy.hidden}
                       </span>
                     )}
                   </div>
@@ -211,17 +227,17 @@ export default function AdminMenuManager({ initialItems }: AdminMenuManagerProps
                           : 'bg-blue-500/20 text-blue-300'
                       }`}
                     >
-                      {item.default_split === 'shared' ? '🍕 Shared' : '🍺 Individual'}
+                      {item.default_split === 'shared' ? copy.shared : copy.individual}
                     </span>
                     <span>•</span>
-                    <span className="capitalize">{item.category}</span>
+                    <span className="capitalize">{copy[item.category]}</span>
                   </div>
                 </div>
               </div>
 
               {/* Price and actions */}
-              <div className="flex items-center gap-3 shrink-0 ml-2">
-                <span className="text-base font-extrabold text-emerald-400 tabular-nums">
+              <div className="menu-item-actions flex items-center gap-3 shrink-0">
+                <span className="text-base font-extrabold text-emerald-400 tabular-nums whitespace-nowrap">
                   {formatCurrency(Number(item.price))}
                 </span>
                 <div className="flex items-center gap-1.5">
@@ -230,10 +246,10 @@ export default function AdminMenuManager({ initialItems }: AdminMenuManagerProps
                       setError(null);
                       setEditingItem(item);
                     }}
-                    aria-label={`Edit ${item.name}`}
-                    className="w-10 h-10 rounded-xl flex items-center justify-center bg-slate-700/70 hover:bg-slate-700 active:bg-slate-600 text-slate-300 hover:text-white transition-all active:scale-95 touch-manipulation cursor-pointer"
+                    aria-label={`${copy.edit} ${item.name}`}
+                    className="w-11 h-11 rounded-xl flex items-center justify-center bg-slate-700/70 hover:bg-slate-700 active:bg-slate-600 text-slate-300 hover:text-white transition-all active:scale-95 touch-manipulation cursor-pointer"
                   >
-                    ✏️
+                    <Pencil aria-hidden="true" className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => handleDelete(item.id, item.name)}
@@ -255,6 +271,8 @@ export default function AdminMenuManager({ initialItems }: AdminMenuManagerProps
         <div
           role="dialog"
           aria-modal="true"
+          aria-label={isAddOpen ? copy.add : copy.edit}
+          data-app-sheet="true"
           className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in"
           onClick={(e) => {
             if (e.target === e.currentTarget) setIsAddOpen(false);
@@ -268,12 +286,12 @@ export default function AdminMenuManager({ initialItems }: AdminMenuManagerProps
             <div className="w-12 h-1.5 bg-slate-600 rounded-full mx-auto mb-4 sm:hidden shrink-0" />
             <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <span>➕</span> Add Menu Item
+                <span>➕</span> {copy.add}
               </h3>
               <button
                 type="button"
                 onClick={() => setIsAddOpen(false)}
-                aria-label="Close dialog"
+                aria-label={copy.close}
                 className="w-10 h-10 rounded-full bg-slate-800 active:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white active:scale-95 transition-all touch-manipulation"
               >
                 ✕
@@ -289,23 +307,23 @@ export default function AdminMenuManager({ initialItems }: AdminMenuManagerProps
             <form onSubmit={handleAddSubmit} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
-                  Item Name *
+                  {copy.name} *
                 </label>
                 <input
-                  type="text"
+                  aria-label={copy.name} type="text"
                   name="name"
                   required
-                  placeholder="e.g. Draught Beer, Margherita Pizza"
+                  placeholder={copy.name}
                   className="w-full px-4 py-3.5 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 text-base min-h-[48px]"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
-                  Price (DT) *
+                  {copy.price} *
                 </label>
                 <input
-                  type="number"
+                  aria-label={copy.price} type="number"
                   name="price"
                   step="0.100"
                   min="0"
@@ -319,30 +337,30 @@ export default function AdminMenuManager({ initialItems }: AdminMenuManagerProps
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
-                    Category
+                    {copy.category}
                   </label>
                   <select
-                    name="category"
+                    aria-label={copy.category} name="category"
                     defaultValue="drinks"
                     className="w-full px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-blue-500"
                   >
-                    <option value="drinks">🍺 Drinks</option>
-                    <option value="food">🍕 Food</option>
-                    <option value="other">🍿 Other</option>
+                    <option value="drinks">{copy.drinks}</option>
+                    <option value="food">{copy.food}</option>
+                    <option value="other">{copy.other}</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
-                    Default Split
+                    {copy.split}
                   </label>
                   <select
-                    name="default_split"
+                    aria-label={copy.split} name="default_split"
                     defaultValue="individual"
                     className="w-full px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-blue-500"
                   >
-                    <option value="individual">🍺 Individual</option>
-                    <option value="shared">🍕 Shared</option>
+                    <option value="individual">{copy.individual}</option>
+                    <option value="shared">{copy.shared}</option>
                   </select>
                 </div>
               </div>
@@ -353,7 +371,7 @@ export default function AdminMenuManager({ initialItems }: AdminMenuManagerProps
                   disabled={isPending}
                   className="w-full py-3.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm shadow-lg shadow-blue-600/30 active:scale-98 transition-all disabled:opacity-50 min-h-[48px]"
                 >
-                  {isPending ? 'Saving...' : 'Add to Menu'}
+                  {isPending ? copy.saving : copy.add}
                 </button>
               </div>
             </form>
@@ -361,11 +379,13 @@ export default function AdminMenuManager({ initialItems }: AdminMenuManagerProps
         </div>
       )}
 
-      {/* Edit Item Modal */}
+      {/* {copy.edit} Modal */}
       {editingItem && (
         <div
           role="dialog"
           aria-modal="true"
+          aria-label={isAddOpen ? copy.add : copy.edit}
+          data-app-sheet="true"
           className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in"
           onClick={(e) => {
             if (e.target === e.currentTarget) setEditingItem(null);
@@ -379,12 +399,12 @@ export default function AdminMenuManager({ initialItems }: AdminMenuManagerProps
             <div className="w-12 h-1.5 bg-slate-600 rounded-full mx-auto mb-4 sm:hidden shrink-0" />
             <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <span>✏️</span> Edit Item
+                <span>✏️</span> {copy.edit}
               </h3>
               <button
                 type="button"
                 onClick={() => setEditingItem(null)}
-                aria-label="Close dialog"
+                aria-label={copy.close}
                 className="w-10 h-10 rounded-full bg-slate-800 active:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white active:scale-95 transition-all touch-manipulation"
               >
                 ✕
@@ -400,10 +420,10 @@ export default function AdminMenuManager({ initialItems }: AdminMenuManagerProps
             <form onSubmit={handleEditSubmit} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
-                  Item Name *
+                  {copy.name} *
                 </label>
                 <input
-                  type="text"
+                  aria-label={copy.name} type="text"
                   name="name"
                   defaultValue={editingItem.name}
                   required
@@ -413,10 +433,10 @@ export default function AdminMenuManager({ initialItems }: AdminMenuManagerProps
 
               <div>
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
-                  Price (DT) *
+                  {copy.price} *
                 </label>
                 <input
-                  type="number"
+                  aria-label={copy.price} type="number"
                   name="price"
                   step="0.100"
                   min="0"
@@ -430,44 +450,44 @@ export default function AdminMenuManager({ initialItems }: AdminMenuManagerProps
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
-                    Category
+                    {copy.category}
                   </label>
                   <select
-                    name="category"
+                    aria-label={copy.category} name="category"
                     defaultValue={editingItem.category}
                     className="w-full px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-blue-500"
                   >
-                    <option value="drinks">🍺 Drinks</option>
-                    <option value="food">🍕 Food</option>
-                    <option value="other">🍿 Other</option>
+                    <option value="drinks">{copy.drinks}</option>
+                    <option value="food">{copy.food}</option>
+                    <option value="other">{copy.other}</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
-                    Default Split
+                    {copy.split}
                   </label>
                   <select
-                    name="default_split"
+                    aria-label={copy.split} name="default_split"
                     defaultValue={editingItem.default_split}
                     className="w-full px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-blue-500"
                   >
-                    <option value="individual">🍺 Individual</option>
-                    <option value="shared">🍕 Shared</option>
+                    <option value="individual">{copy.individual}</option>
+                    <option value="shared">{copy.shared}</option>
                   </select>
                 </div>
               </div>
 
               {/* Active Toggle */}
               <div className="flex items-center justify-between p-3 rounded-xl bg-slate-800 border border-slate-700">
-                <span className="text-sm font-semibold text-slate-300">Visible on Menu</span>
+                <span className="text-sm font-semibold text-slate-300">{copy.visible}</span>
                 <select
-                  name="is_active"
+                  aria-label={copy.visible} name="is_active"
                   defaultValue={editingItem.is_active ? 'true' : 'false'}
                   className="px-3 py-1.5 rounded-lg bg-slate-700 text-white text-xs font-semibold focus:outline-none"
                 >
-                  <option value="true">Active</option>
-                  <option value="false">Hidden</option>
+                  <option value="true">{copy.active}</option>
+                  <option value="false">{copy.hidden}</option>
                 </select>
               </div>
 
@@ -477,14 +497,14 @@ export default function AdminMenuManager({ initialItems }: AdminMenuManagerProps
                   onClick={() => setEditingItem(null)}
                   className="flex-1 py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-sm transition-all"
                 >
-                  Cancel
+                  {copy.cancel}
                 </button>
                 <button
                   type="submit"
                   disabled={isPending}
                   className="flex-1 py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm shadow-lg shadow-blue-600/30 active:scale-98 transition-all disabled:opacity-50"
                 >
-                  {isPending ? 'Saving...' : 'Save Changes'}
+                  {isPending ? copy.saving : copy.save}
                 </button>
               </div>
             </form>

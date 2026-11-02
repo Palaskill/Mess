@@ -713,3 +713,37 @@ html.light .scanner-ready { color: #08734f; }
 .scanner-review-note { color: var(--scan-muted); text-align: center; padding: 4px 12px; }
 .scanner-settings { display: inline-flex; gap: 8px; align-items: center; color: var(--scan-muted); font-size: 12px; justify-self: center; }
 .receipt-scanner button:focus-visible { outline: 3px solid #e8a13a; outline-offset: 3px; }
+
+/* Shared rhythm for participants, billing, menu management and forms. */
+:is(.friends-workspace, .bill-workspace, .menu-workspace) { --panel: #0f172a; --panel-line: #334155; --panel-soft: #1e293b; }
+html.light :is(.friends-workspace, .bill-workspace, .menu-workspace) { --panel: #fff; --panel-line: #e2e8f0; --panel-soft: #f8fafc; }
+:is(.friends-workspace, .bill-workspace, .menu-workspace) > div:first-child { gap: 16px; }
+:is(.friends-workspace, .bill-workspace) > div:first-child h2 { font-size: 20px; line-height: 1.4; }
+:is(.friends-workspace, .bill-workspace, .menu-workspace) button { min-height: 44px; touch-action: manipulation; }
+:is(.friends-workspace, .bill-workspace, .menu-workspace) .bg-blue-600, html.light :is(.friends-workspace, .bill-workspace, .menu-workspace) .bg-blue-600, html.light :is(.friends-workspace, .bill-workspace, .menu-workspace) .bg-blue-600 * { color: #fff !important; background-color: #2457d6 !important; box-shadow: none !important; }
+:is(.friend-card, .bill-card, .menu-item) { background: var(--panel) !important; border-color: var(--panel-line) !important; box-shadow: 0 4px 16px #0f172a05 !important; }
+.friend-card > div { min-width: 0; }
+.friend-card h4 { overflow-wrap: anywhere; }
+.friend-card > div > div:first-child { flex-shrink: 0; }
+.bill-workspace .bill-card { padding: 20px; }
+.bill-workspace .bill-card > div:first-child { gap: 12px; align-items: flex-start; flex-wrap: wrap; }
+.bill-workspace .bill-card h3 { overflow-wrap: anywhere; }
+.bill-workspace .total-card { padding: 24px; border-color: var(--panel-line); background: var(--panel-soft); box-shadow: none; }
+.bill-workspace .total-card > div { gap: 16px; }
+.bill-workspace .total-card > div:last-child { flex-wrap: wrap; }
+.bill-workspace .total-card .tabular-nums { white-space: nowrap; }
+.menu-search:focus-within { outline: 2px solid #3b82f6; outline-offset: 3px; }
+.menu-item { gap: 16px; }
+.menu-item h4 { white-space: normal; overflow-wrap: anywhere; }
+.menu-item-actions { justify-content: space-between; }
+[data-app-sheet] button { min-height: 44px; min-width: 44px; }
+[data-app-sheet] :is(input, select) { font-size: 16px; min-height: 48px; }
+[data-app-sheet] > div { padding-bottom: max(24px, env(safe-area-inset-bottom)); }
+@media (max-width: 639px) {
+  .menu-item { flex-direction: column; align-items: stretch; }
+  .menu-item-actions { padding-top: 12px; border-top: 1px solid var(--panel-line); }
+  :is(.friends-workspace, .bill-workspace) > div:first-child { align-items: flex-start; flex-wrap: wrap; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}

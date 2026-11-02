@@ -178,6 +178,7 @@ export default function CreateSessionForm({
         <div
           role="dialog"
           aria-modal="true"
+          data-app-sheet="true"
           aria-labelledby="modal-title"
           className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 backdrop-blur-sm animate-fade-in"
           onClick={(e) => {

@@ -1,8 +1,17 @@
+import { isAlcoholItem } from '@/lib/party-effects';
+
+let lastHapticAt = 0;
+
 /** Small local feedback, never an indication that a server mutation has succeeded. */
 export function celebrateAssignment(anchor: HTMLElement, itemName: string, category?: string) {
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   const name = itemName.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-  const alcohol = /\b(biere|beer|celtia|beck.?s|heineken|wine|vin|rose|vodka|whisk[ey]*|rhum|rum|gin|tequila|cocktail|pastis|boukha)\b/.test(name);
+  const alcohol = isAlcoholItem(itemName);
+  const now = Date.now();
+  if (typeof navigator.vibrate === 'function' && now - lastHapticAt > 350) {
+    try { navigator.vibrate(alcohol ? [12, 25, 12] : 10); } catch { /* Unsupported devices keep the visual feedback. */ }
+    lastHapticAt = now;
+  }
   const emoji = alcohol ? '🍻' : /pizza/.test(name) ? '🍕' : /burger/.test(name) ? '🍔' : /frite|fries/.test(name) ? '🍟' : /crepe|dessert|gateau/.test(name) ? '😋' : category === 'drinks' ? '🥤' : '🍽️';
   const rect = anchor.getBoundingClientRect();
   const layer = document.createElement('div');

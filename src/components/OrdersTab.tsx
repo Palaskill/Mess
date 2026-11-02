@@ -1,5 +1,7 @@
 'use client';
 
+import PartyName from '@/components/PartyName';
+import { countPartyItems, countSavedPartyItems } from '@/lib/party-effects';
 import { celebrateAssignment } from '@/lib/assignment-effects';
 
 import FriendAvatar from '@/components/FriendAvatar';
@@ -82,6 +84,8 @@ export default function OrdersTab({
   const { t, language } = useLanguage();
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [roundItems, setRoundItems] = useState<RoundItem[]>([]);
+  const partyCounts = countSavedPartyItems(orders, assignments);
+  const roundPartyCounts = countPartyItems(roundItems.map(item => ({ name: item.name, quantity: item.quantity, shared: item.splitType === 'shared', participantIds: item.splitType === 'individual' && item.assignedParticipantIds.length === 1 ? Array(item.quantity).fill(item.assignedParticipantIds[0]) : item.assignedParticipantIds })));
   const [activeCategory, setActiveCategory] = useState<'all' | 'drinks' | 'food' | 'other' | 'custom'>('all');
 
   // Custom item state
@@ -966,7 +970,7 @@ export default function OrdersTab({
                               }`}
                             >
                               <FriendAvatar name={p.name} color={p.color} size={28} />
-                              <span>{p.name}</span>
+                              <span><PartyName name={p.name} count={partyCounts[p.id]} /></span>
                               {isSharing && (
                                 <span className="text-[11px] bg-blue-700/90 rounded-full px-1.5 py-0.5 font-bold">
                                   {formatCurrency(perSharerPrice)}
@@ -1015,7 +1019,7 @@ export default function OrdersTab({
                         {participants.map((p) => {
                           const currentQty = orderAssignments.find((a) => a.participant_id === p.id)?.quantity || 0;
                           return <div key={p.id} className={`participant-row ${currentQty > 0 ? 'is-selected' : ''}`}>
-                            <span className="participant-name"><FriendAvatar name={p.name} color={p.color} size={28} />{p.name}</span>
+                            <span className="participant-name"><FriendAvatar name={p.name} color={p.color} size={28} /><PartyName name={p.name} count={partyCounts[p.id]} /></span>
                             <div className="quantity-control">
                               {!isClosed && <button type="button" aria-label={`${t.orders.adjust} ${p.name} −1`} disabled={isPending || currentQty === 0} onClick={() => handleUpdateAssignmentQty(order, p.id, currentQty - 1)}>−</button>}
                               <span className="tabular-nums" aria-live="polite">{currentQty}</span>
@@ -1554,7 +1558,7 @@ export default function OrdersTab({
                                       }}
                                       className="cursor-pointer select-none"
                                     >
-                                      {p.name}
+                                      <PartyName name={p.name} count={(partyCounts[p.id] || 0) + (roundPartyCounts[p.id] || 0)} />
                                     </span>
 
                                     {pCount > 0 ? (
@@ -1611,7 +1615,7 @@ export default function OrdersTab({
                                     className="w-2 h-2 rounded-full shrink-0"
                                     style={{ backgroundColor: p.color }}
                                   />
-                                  <span className="truncate max-w-[85px]">{p.name}</span>
+                                  <span className="min-w-0 break-words"><PartyName name={p.name} count={(partyCounts[p.id] || 0) + (roundPartyCounts[p.id] || 0)} /></span>
                                   {isSelected && <span className="font-bold">✓</span>}
                                 </button>
                               );
@@ -1739,7 +1743,7 @@ export default function OrdersTab({
                           className="w-3.5 h-3.5 rounded-full shrink-0"
                           style={{ backgroundColor: p.color }}
                         />
-                        <span className="font-bold text-white text-sm">{p.name}</span>
+                        <span className="font-bold text-white text-sm"><PartyName name={p.name} count={partyCounts[p.id]} /></span>
                       </div>
 
                       <div className="flex items-center gap-2">
@@ -2040,6 +2044,7 @@ export default function OrdersTab({
         onImportOrders={handleImportScannedOrders}
         participants={participants}
         menuItems={menuItems}
+        existingPartyCounts={partyCounts}
       />
     </div>
   );

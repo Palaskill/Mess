@@ -1,5 +1,7 @@
 'use client';
 
+import PartyName from '@/components/PartyName';
+import { countPartyItems } from '@/lib/party-effects';
 import { celebrateAssignment } from '@/lib/assignment-effects';
 
 import FriendAvatar from '@/components/FriendAvatar';
@@ -48,6 +50,7 @@ interface ReceiptScannerModalProps {
   onImportOrders: (items: CreateBatchOrderItem[]) => void;
   participants: Participant[];
   menuItems?: MenuItem[];
+  existingPartyCounts?: Record<string, number>;
 }
 
 export default function ReceiptScannerModal({
@@ -56,6 +59,7 @@ export default function ReceiptScannerModal({
   onImportOrders,
   participants,
   menuItems = [],
+  existingPartyCounts = {},
 }: ReceiptScannerModalProps) {
   const { language } = useLanguage();
   const copy = language === 'ar' ? { title: 'مسح الفاتورة', subtitle: 'صوّر الفاتورة ثم راجع الأصناف.', camera: 'التقاط صورة', cameraHint: 'صوّر الفاتورة كاملة', gallery: 'اختيار صورة', galleryHint: 'من الصور أو لقطة شاشة', tips: 'لنتيجة أوضح', tip: 'ضع الفاتورة على سطح مستوٍ مع إضاءة جيدة، وتأكد من وضوح الأسعار.', review: 'راجع الأصناف والأسعار قبل إضافتها.', ready: 'المسح متاح، لا حاجة إلى إعداد.', settings: 'إعدادات المسح', close: 'إغلاق' } : language === 'en' ? { title: 'Scan your receipt', subtitle: 'Take a photo, then check the items.', camera: 'Take a photo', cameraHint: 'Capture the whole receipt', gallery: 'Choose an image', galleryHint: 'Photo library or screenshot', tips: 'For a clearer scan', tip: 'Lay the receipt flat in good light and keep all prices in frame.', review: 'Check the items and prices before adding them.', ready: 'Scanning is ready. No setup needed.', settings: 'Scan settings', close: 'Close' } : { title: 'Scanner l’addition', subtitle: 'Photographiez le ticket, puis vérifiez les articles.', camera: 'Prendre une photo', cameraHint: 'Cadrez le ticket en entier', gallery: 'Choisir une image', galleryHint: 'Galerie photo ou capture d’écran', tips: 'Pour une lecture nette', tip: 'Posez le ticket à plat, dans un endroit bien éclairé, avec tous les prix visibles.', review: 'Vérifiez les articles et les prix avant de les ajouter.', ready: 'Le scan est prêt. Aucun réglage nécessaire.', settings: 'Réglages du scan', close: 'Fermer' };
@@ -68,6 +72,7 @@ export default function ReceiptScannerModal({
   const [isServerConfigured, setIsServerConfigured] = useState<boolean>(false);
   const [scannedResult, setScannedResult] = useState<ParsedReceiptResult | null>(null);
   const [editedItems, setEditedItems] = useState<ParsedReceiptItem[]>([]);
+  const draftPartyCounts = countPartyItems(editedItems.map(item => ({ name: item.name, quantity: item.quantity, shared: item.split_type === 'shared', participantIds: item.assigned_participant_ids || [] })));
   const [currencySymbol, setCurrencySymbol] = useState<string>('DT');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -915,7 +920,7 @@ export default function ReceiptScannerModal({
                             <FriendAvatar name={p.name} color={p.color || "#3B82F6"} size={36} />
                             <div className="min-w-0 flex-1">
                               <span className="scanner-person-name block font-bold">
-                                {p.name}
+                                <PartyName name={p.name} count={(existingPartyCounts[p.id] || 0) + (draftPartyCounts[p.id] || 0)} />
                               </span>
                               {isSelected && currentItem.split_type === 'shared' && (
                                 <span className="block text-[10px] text-emerald-400 font-semibold">
@@ -946,7 +951,7 @@ export default function ReceiptScannerModal({
                           <div className="scanner-person-identity flex items-center gap-3 min-w-0">
                             <FriendAvatar name={p.name} color={p.color || "#3B82F6"} size={36} />
                             <span className="scanner-person-name font-bold">
-                              {p.name}
+                              <PartyName name={p.name} count={(existingPartyCounts[p.id] || 0) + (draftPartyCounts[p.id] || 0)} />
                             </span>
                           </div>
 

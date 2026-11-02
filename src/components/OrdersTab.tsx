@@ -2039,6 +2039,7 @@ export default function OrdersTab({
 
       {/* 📸 AI Gemini Vision Receipt Scanner Bottom Sheet Modal */}
       <ReceiptScannerModal
+        sessionId={sessionId}
         isOpen={isScannerOpen}
         onClose={() => setIsScannerOpen(false)}
         onImportOrders={handleImportScannedOrders}

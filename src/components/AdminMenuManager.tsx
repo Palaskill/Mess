@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { MenuItem } from '@/types';
 import {
   createMenuItem,
+  getMenuAccess,
   updateMenuItem,
   deleteMenuItem,
 } from '@/lib/actions';
@@ -18,6 +19,8 @@ interface AdminMenuManagerProps {
 
 export default function AdminMenuManager({ initialItems }: AdminMenuManagerProps) {
   const { language } = useLanguage();
+  const [canManage, setCanManage] = useState(false);
+  useEffect(() => { void getMenuAccess().then(setCanManage); }, []);
   const copy = language === 'fr' ? {
     all: 'Tout', drinks: 'Boissons', food: 'Cuisine', other: 'Autres', search: 'Rechercher un article', add: 'Ajouter un article', empty: 'Aucun article trouvé', hint: 'Ajoutez un article ou modifiez votre recherche.', name: 'Nom de l’article', price: 'Prix (DT)', category: 'Catégorie', split: 'Répartition', shared: 'Partagé', individual: 'Individuel', hidden: 'Masqué', active: 'Actif', visible: 'Visible dans le menu', edit: 'Modifier', save: 'Enregistrer', saving: 'Enregistrement…', cancel: 'Annuler', close: 'Fermer', items: 'articles', remove: 'Supprimer'
   } : language === 'ar' ? {
@@ -142,6 +145,7 @@ export default function AdminMenuManager({ initialItems }: AdminMenuManagerProps
 
   return (
     <div className="menu-workspace space-y-6">
+      {!canManage && <p role="status" className="p-4 rounded-2xl border border-amber-500/30 bg-amber-500/10 text-sm text-amber-400">{language === 'fr' ? 'Déverrouillez une session active pour modifier la carte.' : language === 'ar' ? 'افتح جلسة نشطة لتعديل القائمة.' : 'Unlock an active session to edit the menu.'}</p>}
       <label className="menu-search flex items-center gap-3 p-3 rounded-2xl border border-slate-700 bg-slate-800">
         <Search aria-hidden="true" className="w-5 h-5 shrink-0 text-slate-400" />
         <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={copy.search} aria-label={copy.search} className="w-full min-w-0 bg-transparent text-base outline-none text-white" />
@@ -171,6 +175,7 @@ export default function AdminMenuManager({ initialItems }: AdminMenuManagerProps
           <span className="font-semibold text-white">{filteredItems.length}</span> {copy.items}
         </p>
         <button
+          disabled={!canManage}
           onClick={() => {
             setError(null);
             setIsAddOpen(true);
@@ -191,6 +196,7 @@ export default function AdminMenuManager({ initialItems }: AdminMenuManagerProps
             {copy.hint}
           </p>
           <button
+            disabled={!canManage}
             onClick={() => setIsAddOpen(true)}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-xs font-semibold"
           >
@@ -246,6 +252,7 @@ export default function AdminMenuManager({ initialItems }: AdminMenuManagerProps
                       setError(null);
                       setEditingItem(item);
                     }}
+                    disabled={!canManage}
                     aria-label={`${copy.edit} ${item.name}`}
                     className="w-11 h-11 rounded-xl flex items-center justify-center bg-slate-700/70 hover:bg-slate-700 active:bg-slate-600 text-slate-300 hover:text-white transition-all active:scale-95 touch-manipulation cursor-pointer"
                   >
@@ -253,7 +260,7 @@ export default function AdminMenuManager({ initialItems }: AdminMenuManagerProps
                   </button>
                   <button
                     onClick={() => handleDelete(item.id, item.name)}
-                    disabled={deletingId === item.id || isPending}
+                    disabled={!canManage || deletingId === item.id || isPending}
                     aria-label={`Delete ${item.name}`}
                     className="w-10 h-10 rounded-xl flex items-center justify-center bg-rose-500/15 hover:bg-rose-500/25 active:bg-rose-500/35 text-rose-400 transition-all active:scale-95 disabled:opacity-50 touch-manipulation cursor-pointer"
                   >
